@@ -206,7 +206,7 @@ if __name__ == "__main__":
         ece = ECampusElectricity(config)
         
         # 收件人列表
-        recipients = ['xyxx1907653220@outlook.com', '1907653220@qq.com']
+        recipients = ['@outlook.com', '@qq.com']
     
         # 获取校区
         area_info = ece.query_area()

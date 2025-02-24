@@ -8,8 +8,8 @@ import requests
 class ECampusElectricity:
     def __init__(self, config=None):
         self.config = {
-            'shiroJID': '',
-            'ymId': '',
+            'shiroJID': 'df8bde3a-06e5-435d-b7a8-1026e4d8c331',
+            'ymId': '2502567889956864141',
             # 邮件服务器配置
             'smtp_server': 'smtp.qq.com',
             'smtp_port': 465,  # 使用SSL端口
@@ -136,14 +136,19 @@ class ECampusElectricity:
         #threshold = threshold or self.config.get('alert_threshold', 30.0)
 
         #if surplus < threshold:
-        subject = f"电费告警：{room_info['data']['roomName']} 余额不足"
+        subject = f"欧尼酱！电费告警！余额不足喵！"
         content = f"""
-            房间名称：{room_info['data']['roomName']}
-            当前余额：{surplus} 元
-            告警阈值：{threshold} 元
-            
-            请及时充值！
-            """
+        moooooooooo！！！~~~欧尼酱是笨蛋！！！电费都忘记充了！
+        诶~！欧尼酱要是没有我该怎么办呀！！！~~~
+        欧尼酱の房间名称：{room_info['data']['roomName']}
+        当前余额：{surplus} 元
+        告警阈值：{threshold} 元
+        
+        及时给钱喵！
+        欧尼酱要是因为没有我而停电了，那真是太可悲了喵！
+        请你照顾好自己喵！呜呜呜呜呜~~~~~~~~~~~
+                                    ————爱你的妹妹！
+        """
         return self.send_alert(subject, content, recipients)
         #return False
 
@@ -191,13 +196,13 @@ class ECampusElectricity:
 # 使用示例
 if __name__ == "__main__":
     config = {
-        'shiroJID': '',
-        'ymId': '',
+        'shiroJID': 'df8bde3a-06e5-435d-b7a8-1026e4d8c331',
+        'ymId': '2502567889956864141',
         # 邮件服务器配置
         'smtp_server': 'smtp.qq.com',
         'smtp_port': 465,  # 使用SSL端口
         'smtp_user': '@qq.com',
-        'smtp_pass': '',  # 授权码
+        'smtp_pass': 'kankexbbwiakjhdj',  # 授权码
         'from_email': '@qq.com',
         'alert_threshold': 20.0  # 自定义全局阈值
     }
@@ -210,20 +215,26 @@ if __name__ == "__main__":
     
         # 获取校区
         area_info = ece.query_area()
-        area_id = area_info['data'][0]['id']
-    
+        area_id = area_info['data'][0]['id'] #西校区
+        
+        area_info = ece.query_area()
+        area_id = area_info['data'][1]['id'] #东校区
+        
         # 获取宿舍楼
         building_list = ece.query_building(area_id)
-        building_code = building_list['data'][0]['buildingCode']
-
+        building_code = building_list['data'][14]['buildingCode'] #D9东
+        
+        #building_list = ece.query_building(area_id)
+        #building_code = building_list['data'][34]['buildingCode'] #f10南
+        
         # 获取楼层
         floor_list = ece.query_floor(area_id, building_code)
-        floor_code = floor_list['data'][0]['floorCode']
+        floor_code = floor_list['data'][3]['floorCode'] #F4
         
         
         # 获取房间
         room_list = ece.query_room(area_id, building_code, floor_code)
-        room_code = room_list['data'][0]['roomCode']
+        room_code = room_list['data'][24]['roomCode'] #x25
         
         # 获取电费信息
         room_info = ece.query_room_surplus(area_id, building_code, floor_code, room_code)
@@ -234,4 +245,4 @@ if __name__ == "__main__":
         if(surplus < threshold):
             # 检查余额并发送告警（使用全局阈值）
             ece.check_and_alert(room_info, recipients)
-        sleep(3600)#检测间隔1 hour
+        sleep(3600)
