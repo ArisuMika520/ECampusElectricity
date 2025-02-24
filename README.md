@@ -1,7 +1,7 @@
 # ECampusElectricity
 采用易校园大学寝室电费获取，可查询电费，电费余额告警（邮箱告警和QQ机器人告警）
 
-#告警模式
+# 告警模式
 使用邮箱告警则采用mode1，采用STMP，默认QQ邮箱，其他自行更改
 使用QQ机器人则采用mode2，需学QQ机器人的部署
 
@@ -14,4 +14,5 @@
 *随后在代码中找到**shiroJID**和**ymId**，相应填入即可
 （mode1翻一翻就找到了，mode2在config.yaml里）
 
-#参考
+# 参考
+参照 [Example](https://github.com/ArisuMika520/ECampusElectricity/tree/main/example) 
