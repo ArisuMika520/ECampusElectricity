@@ -1,0 +1,10 @@
+qq:
+  appid: ""
+  secret: ""
+
+electricity:
+  api_endpoint: "https://api.example.com/electricity"
+  check_interval: 3600  # 检测间隔(秒)
+  default_threshold: 20.0
+  shiroJID: ''
+  ymId: ''
