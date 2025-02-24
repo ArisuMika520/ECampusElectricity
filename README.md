@@ -11,7 +11,7 @@
 * 登录易校园后开启抓包，在里面点一点东西，随后在 ***HttpCanary***或者***Stream***抓到的包中看参数
 * 需要找到两个参数：**shiroJID** 和 **ymId**
   （**shiroJID** 在cookie里 / **ymId** 是一串数字）
-*随后在代码中找到**shiroJID**和**ymId**，相应填入即可
+* 随后在代码中找到**shiroJID**和**ymId**，相应填入即可
 （mode1翻一翻就找到了，mode2在config.yaml里）
 
 # 参考
