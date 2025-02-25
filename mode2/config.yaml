@@ -1,10 +1,10 @@
 qq:
-  appid: ""
-  secret: ""
+  appid: "102704818"
+  secret: "nzCPcp2FSft7LZn1FUjyDShwCSiyEUk1"
 
 electricity:
   api_endpoint: "https://api.example.com/electricity"
   check_interval: 3600  # 检测间隔(秒)
   default_threshold: 20.0
-  shiroJID: ''
-  ymId: ''
+  shiroJID: 'df8bde3a-06e5-435d-b7a8-1026e4d8c331'
+  ymId: '2502567889956864141'

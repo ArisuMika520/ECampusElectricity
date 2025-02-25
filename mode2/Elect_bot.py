@@ -9,6 +9,7 @@ from botpy.message import C2CMessage
 from botpy.message import Message
 from botpy.message import GroupMessage
 import Electricity
+import buildingData
 
 # 读取配置文件
 config = read(os.path.join(os.path.dirname(__file__), "config.yaml"))
@@ -19,30 +20,13 @@ class ElectricityMonitor:
         self.config = config
         self.ece = Electricity.ECampusElectricity(config["electricity"])
 
-    async def query_electricity(self):
+    async def query_electricity(self,area,buildIndex,floor,roomNum):
         """查询电费"""
-        # 获取校区    
-        area_info = self.ece.query_area()
-        area_id = area_info['data'][0]['id']
-        
-        # 获取宿舍楼
-        building_list = self.ece.query_building(area_id)
-        building_code = building_list['data'][0]['buildingCode']
-        
-        # 获取楼层
-        floor_list = self.ece.query_floor(area_id, building_code)
-        floor_code = floor_list['data'][0]['floorCode']
-        
-        # 获取房间
-        room_list = self.ece.query_room(area_id, building_code, floor_code)
-        room_code = room_list['data'][0]['roomCode']
-        
-        # 获取电费信息
-        room_info = self.ece.query_room_surplus(area_id, building_code, floor_code, room_code)
-        return (
-            room_info['data']['surplus'],
-            room_info['data']['roomName']
-        )
+        surplus, room_name = Electricity.ECampusElectricity.get_myRoom(area,buildIndex,floor,roomNum,self.ece)
+        return {
+            surplus,
+            room_name
+        }
 
 class EnhancedQQBot(botpy.Client):
     def __init__(self, intents, monitor: ElectricityMonitor):
@@ -74,11 +58,11 @@ class EnhancedQQBot(botpy.Client):
         
         if content == "查询电费":
             try:
-                surplus, room_name = await self.monitor.query_electricity()
+                surplus, room_name = await self.monitor.query_electricity(1,14,3,24)
                 await message._api.post_c2c_message(
                     openid=message.author.user_openid,
                     msg_type=0, msg_id=message.id,
-                    content=f"⚠️电费预警⚠️\n房间：{room_name}\n当前余额：{surplus}元"
+                    content=f"""呼呼~杂鱼欧尼酱果然还是想到我了呢~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n哦呀哦呀~还有一些呢！哼~"""
                 )
             except Exception as e:
                 _log.error(f"查询失败: {str(e)}")
@@ -87,28 +71,137 @@ class EnhancedQQBot(botpy.Client):
                     msg_type=0, msg_id=message.id,
                     content="⚠️ 电费查询失败，请稍后再试"
                 )
+        elif content.startswith("查阅指定电费"):
+            parts = message.content.strip().split(' ')
+            if len(parts) < 3:
+                await message._api.post_c2c_message(
+                    openid=message.author.user_openid,
+                    msg_type=0, msg_id=message.id,
+                    content=f"⚠️ 参数不足"
+                )
+                raise ValueError("参数不足")
+            else:
+                if parts[1][0] == 'D':
+                    area = 1
+                    buildNum = parts[1]
+                    buildIndex = buildingData.get_buildingIndex(area,buildNum)
+                    floor = int(parts[2][0])-1
+                    roomNum = parts[2][1:]
+                    roomNum = int(roomNum)-1
+                    surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
+                    await message._api.post_c2c_message(
+                        openid=message.author.user_openid,
+                        msg_type=0, msg_id=message.id,
+                        content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                    )
+                else:
+                    area = 0
+                    buildNum = parts[1]
+                    buildIndex = buildingData.get_buildingIndex(area,buildNum)
+                    floor = int(parts[2][0])-1
+                    roomNum = parts[2][1:]
+                    roomNum = int(roomNum)-1
+                    surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
+                    await message._api.post_c2c_message(
+                        openid=message.author.user_openid,
+                        msg_type=0, msg_id=message.id,
+                        content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                    )
         else:
             await self.send_help(message)
             
     async def on_group_at_message_create(self, message: GroupMessage):
+        content = message.content.strip()
         if message.content.strip() == "查询电费":
-            surplus, room_name = await self.monitor.query_electricity()
+            surplus, room_name = await self.monitor.query_electricity(1,14,3,24)
             await message._api.post_group_message(
                 group_openid=message.group_openid,
                 msg_type=0, 
                 msg_id=message.id,
-                content=f"⚠️电费预警⚠️\n房间：{room_name}\n当前余额：{surplus}元"
-            )
+                content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                )
+        elif message.content.strip() == "我爱你":
+            await message._api.post_group_message(
+                group_openid=message.group_openid,
+                msg_type=0, 
+                msg_id=message.id,
+                content=f"啊呀，欧尼酱真的是~我也爱你呀~喵！"
+                )
+        elif message.content.strip() == "爱你":
+            await message._api.post_group_message(
+                group_openid=message.group_openid,
+                msg_type=0, 
+                msg_id=message.id,
+                content=f"欧尼酱！！！唔唔~~~（脸红害羞）"
+                )
+        elif message.content.strip() == "Ciallo～(∠・ω< )⌒★":
+            await message._api.post_group_message(
+                group_openid=message.group_openid,
+                msg_type=0, 
+                msg_id=message.id,
+                content=f"欧尼酱！！！Ciallo～(∠・ω< )⌒★"
+                )
+        elif content.startswith("查阅指定电费"):
+            parts = message.content.strip().split(' ')
+            if len(parts) < 3:
+                await message._api.post_group_message(
+                    group_openid=message.group_openid,
+                    msg_type=0, 
+                    msg_id=message.id,
+                    content=f"参数不足"
+                )
+                await self.send_help(message)
+                raise ValueError("参数不足")
+            if parts[1][0] == 'D':
+                area = 1
+                buildNum = parts[1]
+                buildIndex = buildingData.get_buildingIndex(area,buildNum)
+                floor = int(parts[2][0])-1
+                roomNum = parts[2][1:]
+                roomNum = int(roomNum)-1
+                surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
+                await message._api.post_group_message(
+                    group_openid=message.group_openid,
+                    msg_type=0, 
+                    msg_id=message.id,
+                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                )
+            else:
+                area = 0
+                buildNum = parts[1]
+                buildIndex = buildingData.get_buildingIndex(area,buildNum)
+                floor = int(parts[2][0])-1
+                roomNum = parts[2][1:]
+                roomNum = int(roomNum)-1
+                surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
+                await message._api.post_group_message(
+                    group_openid=message.group_openid,
+                    msg_type=0, 
+                    msg_id=message.id,
+                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                )
+        elif message.content.strip() == "你打d3吗":
+            await message._api.post_group_message(
+                group_openid=message.group_openid,
+                msg_type=0, 
+                msg_id=message.id,
+                content=f"欧尼酱~！你什么意思！你还是自己加油吧！"
+                )
         else:
             await self.send_group_help(message)
     
     async def send_group_help(self, message: GroupMessage):
         """发送帮助信息"""
         help_text = """
-        🤖 电费机器人使用指南：
+        ✡️电费机器人使用指南：
         1. 查询电费：发送「查询电费」
-        2. 订阅提醒：发送「订阅电费 房间号 阈值」
-        示例：订阅电费 D9-402 20
+        2. 查阅指定电费：发送「订阅电费 房间号」
+        示例：西校区：
+              ✅查阅指定电费 10南 101
+              格式：几号楼+东南西北（如果有就加，没有就不加）+寝室号
+             东校区：
+              ✅查阅指定电费 D9东 101
+              格式：D+几号楼+东南西北（如果有就加，没有就不加）+寝室号
         """
         await message._api.post_group_message(
                 group_openid=message.group_openid,
@@ -118,15 +211,20 @@ class EnhancedQQBot(botpy.Client):
                 )
         
     async def send_help(self, message: C2CMessage):
-        """发送帮助信息"""
         help_text = """
-        🤖 电费机器人使用指南：
+        ✡️电费机器人使用指南：
         1. 查询电费：发送「查询电费」
-        2. 订阅提醒：发送「订阅电费 房间号 阈值」
-        示例：订阅电费 D9-402 20
+        2. 查阅指定电费：发送「订阅电费 房间号」
+        示例：西校区：
+              ✅查阅指定电费 10南 101
+              格式：几号楼+东南西北（如果有就加，没有就不加）+寝室号
+             东校区：
+              ✅查阅指定电费 D9东 101
+              格式：D+几号楼+东南西北（如果有就加，没有就不加）+寝室号
         """
         await message._api.post_c2c_message(
             openid=message.author.user_openid,
+            msg_type=0, msg_id=message.id,
             content=help_text
         )
 
