@@ -8,8 +8,8 @@ import requests
 class ECampusElectricity:
     def __init__(self, config=None):
         self.config = {
-            'shiroJID': '',
-            'ymId': '',
+            'shiroJID': 'b8282b30-38d7-453f-883a-2df9f830cd4a',
+            'ymId': '2407708335166238732',
             'alert_threshold': 20.0 
         }
         if config:
@@ -118,31 +118,28 @@ class ECampusElectricity:
     def get_myRoom(area,building,floor,room,ece):
         # 获取校区
         area_info = ece.query_area()
-        area_id = area_info['data'][area]['id'] #东校区
+        area_id = area_info['data'][area]['id']
         # 获取宿舍楼
         building_list = ece.query_building(area_id)
-        building_code = building_list['data'][building]['buildingCode'] #D9东
+        building_code = building_list['data'][building]['buildingCode']
         # 获取楼层
         floor_list = ece.query_floor(area_id, building_code)
-        floor_code = floor_list['data'][floor]['floorCode'] #F4
+        floor_code = floor_list['data'][floor]['floorCode']
         # 获取房间
         room_list = ece.query_room(area_id, building_code, floor_code)
-        room_code = room_list['data'][room]['roomCode'] #x25
+        room_code = room_list['data'][room]['roomCode']
         # 获取电费信息
         room_info = ece.query_room_surplus(area_id, building_code, floor_code, room_code)
-        surplus = float(room_info['data']['surplus'])
+        surplus = room_info['data']['surplus']
         name = room_info['data']['roomName']
-        return {
-            surplus,
-            name
-        }
+        return (surplus,name)
     
 
 # 使用示例
 if __name__ == "__main__":
     config = {
-        'shiroJID': '',
-        'ymId': '',
+        'shiroJID': 'b8282b30-38d7-453f-883a-2df9f830cd4a',
+        'ymId': '2407708335166238732',
         'alert_threshold': 20.0  # 自定义全局阈值
     }
     threshold = 20.0

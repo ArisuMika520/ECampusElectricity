@@ -23,10 +23,7 @@ class ElectricityMonitor:
     async def query_electricity(self,area,buildIndex,floor,roomNum):
         """查询电费"""
         surplus, room_name = Electricity.ECampusElectricity.get_myRoom(area,buildIndex,floor,roomNum,self.ece)
-        return {
-            surplus,
-            room_name
-        }
+        return surplus,room_name
 
 class EnhancedQQBot(botpy.Client):
     def __init__(self, intents, monitor: ElectricityMonitor):
@@ -71,7 +68,7 @@ class EnhancedQQBot(botpy.Client):
                     msg_type=0, msg_id=message.id,
                     content="⚠️ 电费查询失败，请稍后再试"
                 )
-        elif content.startswith("查阅指定电费"):
+        elif content.startswith("/查询指定电费"):
             parts = message.content.strip().split(' ')
             if len(parts) < 3:
                 await message._api.post_c2c_message(
@@ -86,8 +83,7 @@ class EnhancedQQBot(botpy.Client):
                     buildNum = parts[1]
                     buildIndex = buildingData.get_buildingIndex(area,buildNum)
                     floor = int(parts[2][0])-1
-                    roomNum = parts[2][1:]
-                    roomNum = int(roomNum)-1
+                    roomNum = int(parts[2][1:])-1
                     surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
                     await message._api.post_c2c_message(
                         openid=message.author.user_openid,
@@ -99,8 +95,7 @@ class EnhancedQQBot(botpy.Client):
                     buildNum = parts[1]
                     buildIndex = buildingData.get_buildingIndex(area,buildNum)
                     floor = int(parts[2][0])-1
-                    roomNum = parts[2][1:]
-                    roomNum = int(roomNum)-1
+                    roomNum = int(parts[2][1:])-1
                     surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
                     await message._api.post_c2c_message(
                         openid=message.author.user_openid,
@@ -125,7 +120,7 @@ class EnhancedQQBot(botpy.Client):
                 group_openid=message.group_openid,
                 msg_type=0, 
                 msg_id=message.id,
-                content=f"啊呀，欧尼酱真的是~我也爱你呀~喵！"
+                content=f"啊呀，欧尼酱真的是~o(*////▽////*)q我也爱你呀~喵！ο(=•ω＜=)ρ⌒☆"
                 )
         elif message.content.strip() == "爱你":
             await message._api.post_group_message(
@@ -141,7 +136,7 @@ class EnhancedQQBot(botpy.Client):
                 msg_id=message.id,
                 content=f"欧尼酱！！！Ciallo～(∠・ω< )⌒★"
                 )
-        elif content.startswith("查阅指定电费"):
+        elif content.startswith("/查询指定电费"):
             parts = message.content.strip().split(' ')
             if len(parts) < 3:
                 await message._api.post_group_message(
@@ -157,35 +152,40 @@ class EnhancedQQBot(botpy.Client):
                 buildNum = parts[1]
                 buildIndex = buildingData.get_buildingIndex(area,buildNum)
                 floor = int(parts[2][0])-1
-                roomNum = parts[2][1:]
-                roomNum = int(roomNum)-1
+                roomNum = int(parts[2][1:])-1
                 surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
                 await message._api.post_group_message(
                     group_openid=message.group_openid,
                     msg_type=0, 
                     msg_id=message.id,
-                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！┑(￣Д ￣)┍\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
                 )
             else:
                 area = 0
                 buildNum = parts[1]
                 buildIndex = buildingData.get_buildingIndex(area,buildNum)
                 floor = int(parts[2][0])-1
-                roomNum = parts[2][1:]
-                roomNum = int(roomNum)-1
+                roomNum = int(parts[2][1:])-1
                 surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
                 await message._api.post_group_message(
                     group_openid=message.group_openid,
                     msg_type=0, 
                     msg_id=message.id,
-                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！┑(￣Д ￣)┍\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
                 )
         elif message.content.strip() == "你打d3吗":
             await message._api.post_group_message(
                 group_openid=message.group_openid,
                 msg_type=0, 
                 msg_id=message.id,
-                content=f"欧尼酱~！你什么意思！你还是自己加油吧！"
+                content=r"欧尼酱~！你什么意思！你还是自己加油吧！\(￣︶￣*\))"
+                )
+        elif message.content.strip() == "你打abc吗":
+            await message._api.post_group_message(
+                group_openid=message.group_openid,
+                msg_type=0, 
+                msg_id=message.id,
+                content=r"欧尼酱~！信不信我揍你！Pia!(ｏ ‵-′)ノ”(ノ﹏<。)"
                 )
         else:
             await self.send_group_help(message)
@@ -195,13 +195,8 @@ class EnhancedQQBot(botpy.Client):
         help_text = """
         ✡️电费机器人使用指南：
         1. 查询电费：发送「查询电费」
-        2. 查阅指定电费：发送「订阅电费 房间号」
-        示例：西校区：
-              ✅查阅指定电费 10南 101
-              格式：几号楼+东南西北（如果有就加，没有就不加）+寝室号
-             东校区：
-              ✅查阅指定电费 D9东 101
-              格式：D+几号楼+东南西北（如果有就加，没有就不加）+寝室号
+        2. 查阅指定电费：发送「查询指定电费 房间号」\n示例：西校区：\n✅查阅指定电费 10南 101\n格式：几号楼+东南西北（如果有就加，没有就不加）+寝室号
+             东校区：\n✅查阅指定电费 D9东 101\n格式：D+几号楼+东南西北（如果有就加，没有就不加）+寝室号
         """
         await message._api.post_group_message(
                 group_openid=message.group_openid,
@@ -211,16 +206,12 @@ class EnhancedQQBot(botpy.Client):
                 )
         
     async def send_help(self, message: C2CMessage):
+        """发送帮助信息"""
         help_text = """
         ✡️电费机器人使用指南：
         1. 查询电费：发送「查询电费」
-        2. 查阅指定电费：发送「订阅电费 房间号」
-        示例：西校区：
-              ✅查阅指定电费 10南 101
-              格式：几号楼+东南西北（如果有就加，没有就不加）+寝室号
-             东校区：
-              ✅查阅指定电费 D9东 101
-              格式：D+几号楼+东南西北（如果有就加，没有就不加）+寝室号
+        2. 查阅指定电费：发送「查询指定电费 房间号」\n示例：西校区：\n✅查阅指定电费 10南 101\n格式：几号楼+东南西北（如果有就加，没有就不加）+寝室号
+             东校区：\n✅查阅指定电费 D9东 101\n格式：D+几号楼+东南西北（如果有就加，没有就不加）+寝室号
         """
         await message._api.post_c2c_message(
             openid=message.author.user_openid,
