@@ -10,6 +10,7 @@ from botpy.message import Message
 from botpy.message import GroupMessage
 import Electricity
 import buildingData
+import datetime
 
 # 读取配置文件
 config = read(os.path.join(os.path.dirname(__file__), "config.yaml"))
@@ -115,20 +116,6 @@ class EnhancedQQBot(botpy.Client):
                 msg_id=message.id,
                 content=f"""啊呀，居然想指定查询！真是麻烦呐~！\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
                 )
-        elif message.content.strip() == "我爱你":
-            await message._api.post_group_message(
-                group_openid=message.group_openid,
-                msg_type=0, 
-                msg_id=message.id,
-                content=f"啊呀，欧尼酱真的是~o(*////▽////*)q我也爱你呀~喵！ο(=•ω＜=)ρ⌒☆"
-                )
-        elif message.content.strip() == "爱你":
-            await message._api.post_group_message(
-                group_openid=message.group_openid,
-                msg_type=0, 
-                msg_id=message.id,
-                content=f"欧尼酱！！！唔唔~~~（脸红害羞）"
-                )
         elif message.content.strip() == "Ciallo～(∠・ω< )⌒★":
             await message._api.post_group_message(
                 group_openid=message.group_openid,
@@ -154,11 +141,17 @@ class EnhancedQQBot(botpy.Client):
                 floor = int(parts[2][0])-1
                 roomNum = int(parts[2][1:])-1
                 surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
+                now = datetime.datetime.now()
+                minute = now.minute
+                updatetime = 24 - minute
+                if(minute > 24):
+                    updatetime = 60-(minute - 24)
+                formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
                 await message._api.post_group_message(
                     group_openid=message.group_openid,
                     msg_type=0, 
                     msg_id=message.id,
-                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！┑(￣Д ￣)┍\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！┑(￣Д ￣)┍\n查询时间：{formatted_time}\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~\n下次余额更新时间：{updatetime}分钟后"""
                 )
             else:
                 area = 0
@@ -167,11 +160,17 @@ class EnhancedQQBot(botpy.Client):
                 floor = int(parts[2][0])-1
                 roomNum = int(parts[2][1:])-1
                 surplus, room_name = await self.monitor.query_electricity(area,buildIndex,floor,roomNum)
+                now = datetime.datetime.now()
+                minute = now.minute
+                updatetime = 24 - minute
+                if(minute > 24):
+                    updatetime = 60-(minute - 24)
+                formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
                 await message._api.post_group_message(
                     group_openid=message.group_openid,
                     msg_type=0, 
                     msg_id=message.id,
-                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！┑(￣Д ￣)┍\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~"""
+                    content=f"""啊呀，居然想指定查询！真是麻烦呐~！┑(￣Д ￣)┍\n查询时间：{formatted_time}\n⚡ 当前电费：{surplus}元\n房间：{room_name}\n这是谁的寝室呢~\n下次余额更新时间：{updatetime}分钟后"""
                 )
         elif message.content.strip() == "你打d3吗":
             await message._api.post_group_message(
