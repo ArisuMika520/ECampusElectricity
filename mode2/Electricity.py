@@ -8,8 +8,8 @@ import requests
 class ECampusElectricity:
     def __init__(self, config=None):
         self.config = {
-            'shiroJID': 'b8282b30-38d7-453f-883a-2df9f830cd4a',
-            'ymId': '2407708335166238732',
+            'shiroJID': '',
+            'ymId': '',
             'alert_threshold': 20.0 
         }
         if config:
@@ -138,8 +138,8 @@ class ECampusElectricity:
 # 使用示例
 if __name__ == "__main__":
     config = {
-        'shiroJID': 'b8282b30-38d7-453f-883a-2df9f830cd4a',
-        'ymId': '2407708335166238732',
+        'shiroJID': '',
+        'ymId': '',
         'alert_threshold': 20.0  # 自定义全局阈值
     }
     threshold = 20.0
