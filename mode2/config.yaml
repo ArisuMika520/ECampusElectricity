@@ -1,10 +1,10 @@
 qq:
-  appid: "102704818"
-  secret: "nzCPcp2FSft7LZn1FUjyDShwCSiyEUk1"
+  appid: ""
+  secret: ""
 
 electricity:
   api_endpoint: "https://application.xiaofubao.com/app/electric/"
   check_interval: 3600  # 检测间隔(秒)
   default_threshold: 20.0
-  shiroJID: 'b8282b30-38d7-453f-883a-2df9f830cd4a'
-  ymId: '2407708335166238732'
+  shiroJID: ''
+  ymId: ''
