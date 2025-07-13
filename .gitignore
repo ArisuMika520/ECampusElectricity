@@ -175,4 +175,4 @@ cython_debug/
 mode2/__pycache__/
 
 # key
-config.yaml
+mode2/config.yaml
