@@ -172,7 +172,7 @@ cython_debug/
 
 
 # cache
-mode2\__pycache__
+mode2/__pycache__/
 
 # key
 config.yaml
