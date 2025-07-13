@@ -1,7 +1,7 @@
 import logging as pylog
 # 配置日志记录器
 pylog.basicConfig(
-    level=pylog.INFO,
+    level=pylog.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         pylog.FileHandler("tracker_log.log", encoding='utf-8'), # 输出到文件
@@ -21,8 +21,10 @@ from botpy.ext.cog_yaml import read
 
 # --- 配置 ---
 
-# 订阅文件路径
-SUBSCRIPTION_FILE = "his.json"
+# 订阅列表文件路径
+SUBSCRIPTION_LIST_FILE = "sub.json"
+# 订阅历史文件路径
+SUBSCRIPTION_HISTORY_FILE = "his.json"
 # 读取和机器人相同的配置文件
 config = read(os.path.join(os.path.dirname(__file__), "config.yaml"))
 # 每次轮询之间的等待时间（秒）
@@ -72,7 +74,6 @@ async def main():
     """
     主函数，运行无限循环的定时查询任务。
     """
-
     # 创建 ElectricityMonitor 实例
     pylog.info("正在初始化电费查询模块...")
     monitor = ElectricityMonitor(config)
@@ -85,66 +86,112 @@ async def main():
 
         # 读取订阅列表
         try:
-            with open(SUBSCRIPTION_FILE, 'r', encoding='utf-8') as f:
-                subscriptions = json.load(f)
-            pylog.info(f"成功读取订阅文件，共找到 {len(subscriptions)} 条订阅。")
+            with open(SUBSCRIPTION_LIST_FILE, 'r', encoding='utf-8') as f:
+                sub_list = json.load(f)
+            pylog.info(f"成功读取订阅文件，共找到 {len(sub_list)} 条订阅。")
         except FileNotFoundError:
-            pylog.error(f"错误：订阅文件 '{SUBSCRIPTION_FILE}' 不存在。请先创建该文件。")
+            pylog.error(f"错误：订阅文件 '{SUBSCRIPTION_LIST_FILE}' 不存在。请先创建该文件。")
             pylog.info(f"将在 {WAIT_TIME} 秒后重试...")
-            time.sleep(WAIT_TIME)
+            await asyncio.sleep(WAIT_TIME)
             continue  # 跳过本轮循环的剩余部分
         except json.JSONDecodeError:
-            pylog.error(f"错误：订阅文件 '{SUBSCRIPTION_FILE}' 格式无效，无法解析。请手动调整his.json格式。")
+            pylog.error(f"错误：订阅文件 '{SUBSCRIPTION_LIST_FILE}' 格式无效，无法解析。请手动调整his.json格式。")
             pylog.info(f"将在 {WAIT_TIME} 秒后重试...")
-            time.sleep(WAIT_TIME)
+            await asyncio.sleep(WAIT_TIME)
             continue  # 跳过本轮循环的剩余部分
+        
 
+        # 存放新数据，格式为[{"name":"xx南 101","new_require":{"timestamp":"","value":0}}]
+        new_data=[]
         # 对每个订阅的name进行查询并更新数据
-        for sub in subscriptions:
-            name = sub.get("name")
-            if not name:
-                pylog.warning("发现一条没有 'name' 字段的订阅，已跳过。")
-                continue
-
+        for name in sub_list:
             # 执行查询
             new_value = await elect_require(monitor, name)
             
             # 获取当前时间作为记录时间
             record_time = datetime.datetime.now().strftime(TIME_FORMAT)
             
-            # 确保 'his' 字段是列表
-            if 'his' not in sub or not isinstance(sub['his'], list):
-                sub['his'] = []
-            
-            # 判断是否是新数据
-            last_time = ""
-            last_value = -100
-            # 遍历sub以得到最新的一次查询
-            for item in sub['his']:
-                if last_time == "" or datetime.datetime.strptime(last_time, TIME_FORMAT) < datetime.datetime.strptime(item["timestamp"], TIME_FORMAT):
-                    last_time = item["timestamp"]
-                    last_value = item["value"]
+            new_data.append(
+                {
+                    "name": name,
+                    "new_require":
+                        {
+                            "timestamp": record_time,
+                            "value": new_value
+                        }
+                }
+            )
+            pylog.info(f"查询房间 ")
+        
+        pylog.debug(f"new_data\n{new_data}")
+        pylog.info(f"所有订阅房间已查询完毕，准备合并入 {SUBSCRIPTION_HISTORY_FILE}")
 
-            if last_value == new_value:
-                pylog.info("新查询与旧查询结果一致，不保存")
-            else:
-                # 将新数据 {时间:"时间", 数值:数值} 追加到历史记录中
-                sub['his'].append(
+        # 这个时候才开始读&写 SUBSCRIPTION_HISTORY_FILE，以确保最小化该json的修改耗时
+        try:
+            # 读取订阅历史
+            with open(SUBSCRIPTION_HISTORY_FILE, 'r', encoding='utf-8') as f:
+                sub_his = json.load(f)
+                pylog.info(f"成功读取订阅历史，共找到 {len(sub_his)} 历史订阅房间，共计 {sum([len(_["his"]) for _ in sub_his])} 条历史数据")
+        except FileNotFoundError:
+            pylog.error(f"错误：订阅历史文件 '{SUBSCRIPTION_HISTORY_FILE}' 不存在。请先创建该文件。")
+            pylog.info(f"将在 {WAIT_TIME} 秒后重试...")
+            await asyncio.sleep(WAIT_TIME)
+            continue  # 跳过本轮循环的剩余部分
+        except json.JSONDecodeError:
+            pylog.error(f"错误：订阅文件 '{SUBSCRIPTION_LIST_FILE}' 格式无效，无法解析。请手动调整his.json格式。")
+            pylog.info(f"将在 {WAIT_TIME} 秒后重试...")
+            await asyncio.sleep(WAIT_TIME)
+            continue  # 跳过本轮循环的剩余部分
+
+        # 合并数据
+        pylog.debug(f"sub_his\n{sub_his}")
+
+        # 将历史列表转换为字典，方便快速查找和更新
+        sub_his_namemap = {item['name']: idx for idx,item in enumerate(sub_his)} # 构建name->idx的映射
+        pylog.debug(f"sub_his_namemap\n{sub_his_namemap}")
+
+        for new_item in new_data:
+            name = new_item["name"]
+            new_require = new_item["new_require"]
+            
+            if name not in sub_his_namemap or not isinstance(sub_his[sub_his_namemap[name]]["his"], list):
+                # 如果是新房间，直接创建条目
+                sub_his.append(
                     {
-                        "timestamp": record_time,
-                        "value": new_value
+                        "name": name,
+                        "his": [new_require]
                     }
                 )
-                pylog.info(f"得到新数据：time = {record_time}, value = {new_value}")
+                pylog.info(f"房间 {name} 为首次记录，{new_require}")
+            else:
+                # 如果是已有房间，则判断数据是否变化
+                last_time = ""
+                last_value = -100
+                # 在 sub_his 中找到数据
+                old_data = sub_his[sub_his_namemap[name]]
+                # 遍历 old_data 以得到最新的一次查询
+                # 【可优化】直接取最后一个元素的值进行比较
+                for old_item in old_data['his']:
+                    if last_time == "" or datetime.datetime.strptime(last_time, TIME_FORMAT) < datetime.datetime.strptime(old_item["timestamp"], TIME_FORMAT):
+                        last_time = old_item["timestamp"]
+                        last_value = old_item["value"]
 
-        # 将更新后的内容写回文件
-        try:
-            with open(SUBSCRIPTION_FILE, 'w', encoding='utf-8') as f:
-                # 使用 indent=4 使 JSON 文件格式化，更易读
-                json.dump(subscriptions, f, ensure_ascii=False, indent=4)
-            pylog.info(f"所有订阅已更新，并成功写回文件 '{SUBSCRIPTION_FILE}'。")
-        except IOError as e:
-            pylog.error(f"无法将更新写入文件 '{SUBSCRIPTION_FILE}': {e}")
+                if last_value == new_require["value"]:
+                    pylog.info(f"房间 {name} 新查询与旧查询结果一致，不保存")
+                else:
+                    # 将新数据 {时间:"时间", 数值:数值} 追加到历史记录中
+                    old_data['his'].append(
+                        new_require
+                    )
+                    pylog.info(f"房间 {name} 得到新数据，{new_require}")
+        
+        
+        # 写回 SUBSCRIPTION_HISTORY_FILE
+        pylog.info(f"开始写回文件 '{SUBSCRIPTION_HISTORY_FILE}'")
+        with open(SUBSCRIPTION_HISTORY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(sub_his, f, ensure_ascii=False, indent=4)
+
+        pylog.info(f"所有订阅已更新，并成功写回文件 '{SUBSCRIPTION_HISTORY_FILE}'。")
 
         # 等待
         pylog.info(f"本轮查询结束，程序将休眠 {WAIT_TIME} 秒。\n"+30*"-")
@@ -153,13 +200,30 @@ async def main():
 
 
 if __name__ == "__main__":
-    
-    # 检查订阅文件是否存在，如果不存在则创建一个示例文件
+    pylog.info("查找订阅文件...")
+    # 检查订阅列表文件是否存在，如果不存在则创建一个示例文件
     try:
-        with open(SUBSCRIPTION_FILE, 'r', encoding='utf-8'):
-            pass
+        with open(SUBSCRIPTION_LIST_FILE, 'r', encoding='utf-8'):
+            pylog.info(f"找到订阅列表 {SUBSCRIPTION_LIST_FILE}")
     except FileNotFoundError:
-        print(f"订阅文件 '{SUBSCRIPTION_FILE}' 未找到，将为您创建一个示例文件。")
+        print(f"订阅文件 '{SUBSCRIPTION_LIST_FILE}' 未找到，将为您创建一个示例文件。")
+        # initial_data = []  # 如果不需要完整格式的示例文件，则创建一个空list[]即可       
+        initial_data = [
+            "10南 606",
+            "D9东 425"
+        ]
+        with open(SUBSCRIPTION_LIST_FILE, 'w', encoding='utf-8') as f:
+            json.dump(initial_data, f, ensure_ascii=False, indent=4)
+        print("示例文件创建成功。")
+
+
+    # 检查订阅历史文件是否存在，如果不存在则创建一个示例文件
+    try:
+        with open(SUBSCRIPTION_HISTORY_FILE, 'r', encoding='utf-8'):
+            pylog.info(f"找到订阅历史 {SUBSCRIPTION_HISTORY_FILE}")
+    except FileNotFoundError:
+        pylog.info(f"订阅文件 '{SUBSCRIPTION_HISTORY_FILE}' 未找到，将为您创建一个示例文件。")
+        # initial_data = []  # 如果不需要完整格式的示例文件，则创建一个空list[]即可       
         initial_data = [
             {
                 "name": "10南 606",
@@ -180,10 +244,10 @@ if __name__ == "__main__":
                 ]
             }
         ]
-        with open(SUBSCRIPTION_FILE, 'w', encoding='utf-8') as f:
+        with open(SUBSCRIPTION_HISTORY_FILE, 'w', encoding='utf-8') as f:
             json.dump(initial_data, f, ensure_ascii=False, indent=4)
         print("示例文件创建成功。")
-
+    
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
