@@ -1,7 +1,7 @@
 import logging as pylog
 # 配置日志记录器
 pylog.basicConfig(
-    level=pylog.DEBUG,
+    level=pylog.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         pylog.FileHandler("tracker_log.log", encoding='utf-8'), # 输出到文件
@@ -9,11 +9,8 @@ pylog.basicConfig(
     ]
 )
 import datetime
-import time
 import json
-import random
 import os
-import Electricity
 import buildingData
 import asyncio
 from Elect_bot import ElectricityMonitor
@@ -82,7 +79,7 @@ async def main():
     while True:
         # 输出信息
         current_time_str = datetime.datetime.now().strftime(TIME_FORMAT)
-        pylog.info(f"现在时间是 {current_time_str}，准备开始新一轮查询。")
+        pylog.info(f"现在时间是 {current_time_str}，准备开始查询——")
 
         # 读取订阅列表
         try:
@@ -121,7 +118,6 @@ async def main():
                         }
                 }
             )
-            pylog.info(f"查询房间 ")
         
         pylog.debug(f"new_data\n{new_data}")
         pylog.info(f"所有订阅房间已查询完毕，准备合并入 {SUBSCRIPTION_HISTORY_FILE}")
@@ -194,7 +190,11 @@ async def main():
         pylog.info(f"所有订阅已更新，并成功写回文件 '{SUBSCRIPTION_HISTORY_FILE}'。")
 
         # 等待
-        pylog.info(f"本轮查询结束，程序将休眠 {WAIT_TIME} 秒。\n"+30*"-")
+        pylog.info(f"本轮查询结束，程序将休眠 {WAIT_TIME} 秒。")
+        now = datetime.datetime.now()
+        next_run_time = now + datetime.timedelta(seconds=WAIT_TIME)
+        next_run_time_str = next_run_time.strftime(TIME_FORMAT) # 使用您已定义的 TIME_FORMAT 常量
+        pylog.info(f"下一次查询预计将于 {next_run_time_str} 进行。\n"+30*"-")
         await asyncio.sleep(WAIT_TIME)
 
 
