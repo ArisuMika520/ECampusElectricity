@@ -169,3 +169,10 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+
+# cache
+mode2\__pycache__
+
+# key
+config.yaml
