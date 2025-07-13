@@ -27,6 +27,8 @@ SUBSCRIPTION_FILE = "his.json"
 config = read(os.path.join(os.path.dirname(__file__), "config.yaml"))
 # 每次轮询之间的等待时间（秒）
 WAIT_TIME = config["tracker"]["check_interval"]
+# 时间字符串格式
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # --- 查询函数 ---
 
@@ -60,7 +62,7 @@ async def elect_require(monitor: ElectricityMonitor, target_name: str) -> float:
     return surplus
 
     # now = datetime.datetime.now()
-    # formatted_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    # formatted_time = now.strftime(TIME_FORMAT)
 
     # return (surplus,formatted_time)
 
@@ -78,7 +80,7 @@ async def main():
 
     while True:
         # 输出信息
-        current_time_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        current_time_str = datetime.datetime.now().strftime(TIME_FORMAT)
         pylog.info(f"现在时间是 {current_time_str}，准备开始新一轮查询。")
 
         # 读取订阅列表
@@ -108,19 +110,32 @@ async def main():
             new_value = await elect_require(monitor, name)
             
             # 获取当前时间作为记录时间
-            record_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            record_time = datetime.datetime.now().strftime(TIME_FORMAT)
             
             # 确保 'his' 字段是列表
             if 'his' not in sub or not isinstance(sub['his'], list):
                 sub['his'] = []
             
-            # 将新数据 [时间, 数值] 追加到历史记录中
-            sub['his'].append(
-                {
-                    "timestamp": record_time,
-                    "value": new_value
-                }
-            )
+            # 判断是否是新数据
+            last_time = ""
+            last_value = -100
+            # 遍历sub以得到最新的一次查询
+            for item in sub['his']:
+                if last_time == "" or datetime.datetime.strptime(last_time, TIME_FORMAT) < datetime.datetime.strptime(item["timestamp"], TIME_FORMAT):
+                    last_time = item["timestamp"]
+                    last_value = item["value"]
+
+            if last_value == new_value:
+                pylog.info("新查询与旧查询结果一致，不保存")
+            else:
+                # 将新数据 {时间:"时间", 数值:数值} 追加到历史记录中
+                sub['his'].append(
+                    {
+                        "timestamp": record_time,
+                        "value": new_value
+                    }
+                )
+                pylog.info(f"得到新数据：time = {record_time}, value = {new_value}")
 
         # 将更新后的内容写回文件
         try:
@@ -132,7 +147,7 @@ async def main():
             pylog.error(f"无法将更新写入文件 '{SUBSCRIPTION_FILE}': {e}")
 
         # 等待
-        pylog.info(f"本轮查询结束，程序将休眠 {WAIT_TIME} 秒。")
+        pylog.info(f"本轮查询结束，程序将休眠 {WAIT_TIME} 秒。\n"+30*"-")
         await asyncio.sleep(WAIT_TIME)
 
 
