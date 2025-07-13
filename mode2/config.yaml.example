@@ -1,0 +1,13 @@
+qq:
+  appid: ""
+  secret: ""
+
+electricity:
+  api_endpoint: "https://application.xiaofubao.com/app/electric/"
+  check_interval: 3600  # 检测间隔(秒)
+  default_threshold: 20.0
+  shiroJID: ''
+  ymId: ''
+
+tracker:
+  check_interval: 300  # 订阅跟踪间隔(秒)
