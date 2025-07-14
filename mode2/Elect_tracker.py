@@ -153,7 +153,7 @@ async def main():
             name = new_item["name"]
             new_require = new_item["new_require"]
             
-            if name not in sub_his_namemap or not isinstance(sub_his[sub_his_namemap[name]]["his"], list):
+            if name not in sub_his_namemap:
                 # 如果是新房间，直接创建条目
                 sub_his.append(
                     {
@@ -175,9 +175,22 @@ async def main():
                         last_time = old_item["timestamp"]
                         last_value = old_item["value"]
 
+                # 倘若上一次查询与本次电费相同，且时间差小于2h（排除无人断电的情况），则不保存
+                should_append = True
+                
+                # 检查电费值是否相同
                 if last_value == new_require["value"]:
-                    pylog.info(f"房间 {name} 新查询与旧查询结果一致，不保存")
-                else:
+                    # 再检查时间差是否小于2小时
+                    last_time_obj = datetime.datetime.strptime(last_time, TIME_FORMAT)
+                    new_time_obj = datetime.datetime.strptime(new_require['timestamp'], TIME_FORMAT)
+                    time_difference = new_time_obj - last_time_obj
+                    # 如果时间差小于2小时，则不追加
+                    if time_difference < datetime.timedelta(hours=2):
+                        pylog.info(f"房间 {name} 数据未变 (值: {new_require['value']}) 且时间差小于2小时，跳过保存。")
+                        should_append = False
+
+
+                if should_append:
                     # 将新数据 {时间:"时间", 数值:数值} 追加到历史记录中
                     old_data['his'].append(
                         new_require
