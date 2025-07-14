@@ -26,6 +26,8 @@ SUBSCRIPTION_HISTORY_FILE = "his.json"
 config = read(os.path.join(os.path.dirname(__file__), "config.yaml"))
 # 每次轮询之间的等待时间（秒）
 WAIT_TIME = config["tracker"]["check_interval"]
+# 数据上限
+HIS_LIMIT = config["tracker"]["his_limit"]
 # 时间字符串格式
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -168,12 +170,17 @@ async def main():
                 last_value = -100
                 # 在 sub_his 中找到数据
                 old_data = sub_his[sub_his_namemap[name]]
+                '''
                 # 遍历 old_data 以得到最新的一次查询
                 # 【可优化】直接取最后一个元素的值进行比较
                 for old_item in old_data['his']:
                     if last_time == "" or datetime.datetime.strptime(last_time, TIME_FORMAT) < datetime.datetime.strptime(old_item["timestamp"], TIME_FORMAT):
                         last_time = old_item["timestamp"]
                         last_value = old_item["value"]
+                '''
+                # 【优化】直接取最后一个元素的值进行比较
+                last_time = old_data['his'][-1]["timestamp"]
+                last_value = old_data['his'][-1]["value"]
 
                 # 倘若上一次查询与本次电费相同，且时间差小于2h（排除无人断电的情况），则不保存
                 should_append = True
@@ -196,7 +203,16 @@ async def main():
                         new_require
                     )
                     pylog.info(f"房间 {name} 得到新数据，{new_require}")
+
         
+        # 检查sub_his中是否存在房间超过数据上限
+        for item in sub_his:
+            if len(item["his"]) > HIS_LIMIT:
+              item["his"]=item["his"][-HIS_LIMIT-1:-1]
+              pylog.info(f"房间 {item["name"]} 历史数据超出数据上限")
+              pylog.info(f"将删除 {item["his"][0]["timestamp"]} 之前的历史数据")
+              pylog.info(f"剩余数据时间范围：{item["his"][0]["timestamp"]} - {item["his"][-1]["timestamp"]}")
+              
         
         # 写回 SUBSCRIPTION_HISTORY_FILE
         pylog.info(f"开始写回文件 '{SUBSCRIPTION_HISTORY_FILE}'")

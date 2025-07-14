@@ -11,3 +11,4 @@ electricity:
 
 tracker:
   check_interval: 300  # 订阅跟踪间隔(秒)
+  his_limit: 240 # 每个房间的数据量上限，只保留最新的 his_limit 条数据。预计 1h 会产生一条新数据
