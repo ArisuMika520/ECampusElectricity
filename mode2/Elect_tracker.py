@@ -102,23 +102,26 @@ async def main():
         new_data=[]
         # 对每个订阅的name进行查询并更新数据
         for name in sub_list:
-            # 执行查询
-            new_value = await elect_require(monitor, name)
-            
-            # 获取当前时间作为记录时间
-            record_time = datetime.datetime.now().strftime(TIME_FORMAT)
-            
-            new_data.append(
-                {
-                    "name": name,
-                    "new_require":
-                        {
-                            "timestamp": record_time,
-                            "value": new_value
-                        }
-                }
-            )
-        
+            try:
+                # 执行查询
+                new_value = await elect_require(monitor, name)
+                
+                # 获取当前时间作为记录时间
+                record_time = datetime.datetime.now().strftime(TIME_FORMAT)
+                
+                new_data.append(
+                    {
+                        "name": name,
+                        "new_require":
+                            {
+                                "timestamp": record_time,
+                                "value": new_value
+                            }
+                    }
+                )
+            except Exception as e:
+                pylog.error(f"处理房间 '{name}' 时发生错误，已跳过。错误详情: {e}")
+                continue
         pylog.debug(f"new_data\n{new_data}")
         pylog.info(f"所有订阅房间已查询完毕，准备合并入 {SUBSCRIPTION_HISTORY_FILE}")
 
