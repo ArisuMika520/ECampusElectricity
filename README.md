@@ -35,6 +35,7 @@
 ECampusElectricity/
 ├── mode1/
 │    └── Electricity.py # mode1———服务器后台脚本，查询电费和邮箱告警
+│ 
 └── mode2/
       ├── Elect_bot.py # qq机器人主程序，负责交互逻辑
       │
