@@ -30,6 +30,25 @@
 * 随后在代码中找到**shiroJID**和**ymId**，相应填入即可
 （mode1翻一翻就找到了，mode2在config.yaml里）
 
+# 项目结构
+```
+ECampusElectricity/
+├── mode1/
+│    └── Electricity.py # mode1———服务器后台脚本，查询电费和邮箱告警
+└── mode2/
+      ├── Elect_bot.py # qq机器人主程序，负责交互逻辑
+      │
+      ├── Electricity.py # 电费查询
+      │
+      ├── buildingData.py # 寝室楼数据索引记录
+      │
+      ├── config.yaml # 基础设置
+      │
+      ├── botpy.log # 机器人输出log日志
+      │
+      └── capture_tool.py # 抓取脚本（未完成）
+```
+
 # 注意：
 本项目的buildingData数据只适用于本人学校，如需修改，请通过遍历抓取字典中的所有楼寝室与对应的索引
 
