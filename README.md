@@ -36,23 +36,57 @@
 （mode1翻一翻就找到了，mode2在config.yaml里）
 
 ## ⚙️ 项目结构
+### mode1
 ```
 ECampusElectricity/
-├── mode1/
-│    └── Electricity.py # mode1———服务器后台脚本，查询电费和邮箱告警
-│ 
-└── mode2/
-      ├── Elect_bot.py # qq机器人主程序，负责交互逻辑
-      │
-      ├── Electricity.py # 电费查询
-      │
-      ├── buildingData.py # 寝室楼数据索引记录
-      │
-      ├── config.yaml # 基础设置
-      │
-      ├── botpy.log # 机器人输出log日志
-      │
-      └── capture_tool.py # 抓取脚本（未完成）
+└── mode1/
+     └── Electricity.py # 服务器后台脚本，查询电费和邮箱告警
+```
+### mode 2
+```
+ECampusElectricityBot/
+├── src/
+│   └── elect_bot/
+│       ├── __init__.py
+│       ├── core/                      # 核心逻辑模块
+│       │   ├── __init__.py
+│       │   ├── electricity.py         # 封装所有与电费查询相关的API交互
+│       │   └── building.py            # 负责提供楼栋数据索引
+│       │
+│       ├── data/                      # 数据模块
+│       │   ├── __init__.py
+│       │   └── storage.py             # 负责JSON文件的读写（订阅信息、历史记录）
+│       │
+│       ├── bot/                       # Bot相关模块
+│       │   ├── __init__.py
+│       │   ├── handlers.py            # 存放所有具体的命令方法（如订阅、查询）
+│       │   └── main.py                # 机器人入口，负责启动和注册处理器
+│       │
+│       └── utils/                     # 工具函数模块
+│           ├── __init__.py
+│           ├── plotter.py             # 专门用于绘制电费历史折线图
+│           └── time_predictor.py      # 专门用于预测剩余时间的逻辑
+│
+├── scripts/                         # 独立脚本目录
+│   └── tracker.py                   # 重构后的电费定时追踪脚本
+│
+├── data_files/                      # 存放数据
+│   ├── sub.json
+│   └── bot.log
+│
+├── assets/                          # 存放静态
+│   └── fonts/
+│       ├── YaHei Ubuntu Mono.ttf
+│       └── simhei.ttf
+│
+├── tests/                           # 测试代码目录
+│   ├── test_core.py
+│   └── test_storage.py
+│
+├── config.yaml                      # 最终使用的配置文件
+├── config.yaml.example              # 配置模板
+├── .gitignore
+└── README.md
 ```
 
 ## 📄 许可证
