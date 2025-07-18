@@ -71,6 +71,8 @@ ECampusElectricityBot/
 │
 ├── data_files/                      # 存放数据
 │   ├── sub.json
+│   ├── his.json
+│   ├── plot/                        # 存放曲线图
 │   └── bot.log
 │
 ├── assets/                          # 存放静态
