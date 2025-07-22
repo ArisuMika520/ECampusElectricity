@@ -20,7 +20,6 @@
 
 ## 🔄 未来更新计划
 * [ ] 实现QQ机器人的id绑定，一键查询
-* [ ] 对mode1的邮箱进行电费消耗预测，数据分析以及图形化服务
 
 ## 🏗️ 项目模式
 * mode1使用邮箱告警，采用STMP，默认QQ邮箱，其他自行更改
@@ -55,7 +54,7 @@ ECampusElectricityBot/
 │       │
 │       ├── data/                      # 数据模块
 │       │   ├── __init__.py
-│       │   └── storage.py             # 负责JSON文件的读写（订阅信息、历史记录）
+│       │   └── sub_storage.py             # 负责JSON文件的读写（订阅信息、历史记录）
 │       │
 │       ├── bot/                       # Bot相关模块
 │       │   ├── __init__.py
@@ -65,7 +64,7 @@ ECampusElectricityBot/
 │       └── utils/                     # 工具函数模块
 │           ├── __init__.py
 │           ├── plotter.py             # 专门用于绘制电费历史折线图
-│           └── time_predictor.py      # 专门用于预测剩余时间的逻辑
+│           └── predictor.py           # 专门用于预测剩余时间的逻辑
 │
 ├── scripts/                         # 独立脚本目录
 │   └── tracker.py                   # 重构后的电费定时追踪脚本
@@ -73,7 +72,7 @@ ECampusElectricityBot/
 ├── data_files/                      # 存放数据
 │   ├── sub.json
 │   ├── his.json
-│   ├── plot/                        # 存放曲线图
+│   ├── plot/
 │   └── bot.log
 │
 ├── assets/                          # 存放静态
@@ -96,7 +95,7 @@ ECampusElectricityBot/
 本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件
 ## 📬 联系我们
 
-- **GitHub Issues**: [提交问题或建议](https://github.com/OpenEasyAgent/EasyAgent/issues)
+- **GitHub Issues**: [提交问题或建议](https://github.com/ArisuMika520/ECampusElectricity/issues)
 
 ---
 
