@@ -6,7 +6,7 @@
 - 检查是否订阅is_sub
 - 手动添加一条数据add_record（可以用于用户查询数据时发现数据存在更新时手动添加，这样就比tracker早一步了）
 
-Buid by Vanilla-chan (2025.7.18)
+Build by Vanilla-chan (2025.7.18)
 
 Refactor by ArisuMika (2025.7.25)
 '''
@@ -280,4 +280,5 @@ class Subscription:
             return {
                 "code": 110,
                 "info": "添加失败，文件保存失败"
+
             }
