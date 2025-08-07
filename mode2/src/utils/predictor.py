@@ -2,7 +2,7 @@
 负责qq机器人的有关预测的功能
 - 用户查询电费使用情况、上次电费充值时间（区间）、预计剩余时间、预计停电时间
 
-Buid by Vanilla-chan (2025.7.18)
+Build by Vanilla-chan (2025.7.18)
 
 Refactor by ArisuMika (2025.7.25)
 '''
@@ -148,6 +148,7 @@ class predictor:
                     "vaild_data_size": len(vaild_data),
                     "delta_timestamp": delta_timestamp_hours
                 }
+
 
 
         return {"code": "101", "info": f"嘿嘿嘿~❤️杂鱼~杂鱼~💞\n订阅历史中不存在房间「{room_name}」的历史数据哦！"}
