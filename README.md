@@ -32,7 +32,7 @@
 * 需要找到两个参数：**shiroJID** 和 **ymId**
   （**shiroJID** 在cookie里 / **ymId** 是一串数字）
 * 随后在代码中找到**shiroJID**和**ymId**，相应填入即可
-（mode1翻一翻就找到了，mode2在config.yaml里）
+* mode2的机器人快速开始不了，需要根据个人具体情况进行部分的重构（例如图床API，appid等）
 
 ## ⚙️ 项目结构
 ### mode1
