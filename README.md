@@ -49,31 +49,32 @@ ECampusElectricityBot/
 │       ├── __init__.py
 │       ├── core/                      # 核心逻辑模块
 │       │   ├── __init__.py
-│       │   ├── electricity.py         # 封装所有与电费查询相关的API交互
-│       │   └── building.py            # 负责提供楼栋数据索引
+│       │   ├── Electricity.py         # 封装所有与电费查询相关的API交互
+│       │   └── Building.py            # 负责提供楼栋数据索引
 │       │
 │       ├── data/                      # 数据模块
 │       │   ├── __init__.py
-│       │   └── sub_storage.py             # 负责JSON文件的读写（订阅信息、历史记录）
+│       │   └── sub_storage.py         # 负责JSON文件的读写（订阅信息、历史记录）
 │       │
 │       ├── bot/                       # Bot相关模块
 │       │   ├── __init__.py
-│       │   ├── handlers.py            # 存放所有具体的命令方法（如订阅、查询）
-│       │   └── main.py                # 机器人入口，负责启动和注册处理器
+│       │   ├── bot_command.py         # 存放所有具体的命令方法（如订阅、查询）
+│       │   └── Elect_bot.py           # 机器人入口，负责启动和注册处理器
 │       │
 │       └── utils/                     # 工具函数模块
 │           ├── __init__.py
 │           ├── plotter.py             # 专门用于绘制电费历史折线图
+│           ├── image_uploader.py      # 图片上传图床的脚本
 │           └── predictor.py           # 专门用于预测剩余时间的逻辑
 │
 ├── scripts/                         # 独立脚本目录
-│   └── tracker.py                   # 重构后的电费定时追踪脚本
+│   └── Elect_tracker.py             # 重构后的电费定时追踪脚本
 │
 ├── data_files/                      # 存放数据
-│   ├── sub.json
-│   ├── his.json
-│   ├── plot/
-│   └── bot.log
+│   ├── sub.json                     # 订阅数据
+│   ├── his.json                     # 历史数据
+│   ├── image_upload_records.json    # 图床上传的旧图片key（负责删除旧图片）
+│   └── plot/                        # 图形数据
 │
 ├── assets/                          # 存放静态
 │   └── fonts/
@@ -81,10 +82,7 @@ ECampusElectricityBot/
 │       └── simhei.ttf
 │
 ├── tests/                           # 测试代码目录
-│   ├── test_core.py
-│   └── test_storage.py
 │
-├── config.yaml                      # 最终使用的配置文件
 ├── config.yaml.example              # 配置模板
 ├── .gitignore
 └── README.md
@@ -106,8 +104,13 @@ ECampusElectricityBot/
 
 ---
 
-## 注意：
-本项目的buildingData数据只适用于本人学校，如需修改，请通过遍历抓取字典中的所有楼寝室与对应的索引
+## 注意:
+<div>
+<p>本项目的buildingData数据只适用于本人学校，如需修改，请通过遍历抓取字典中的所有楼寝室与对应的索引</p>
+<p>跟据具体寝室结构调整具体代码（如果你要用mode2的话）</p>
+</div>
+
+
 
 ## 参考
 参照 [Example](https://github.com/ArisuMika520/ECampusElectricity/tree/main/example) 
