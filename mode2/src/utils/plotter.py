@@ -2,7 +2,7 @@
 负责qq机器人的有关图形化的功能
 - 绘制房间最近电费历史折线图
 
-Buid by Vanilla-chan (2025.7.18)
+Build by Vanilla-chan (2025.7.18)
 
 Refactor by ArisuMika (2025.8.7)
 
@@ -326,5 +326,6 @@ class Elect_plot:
             return {"code": 121, "info": "保存图片失败"}
         finally:
             plt.close(fig)
+
 
         return {"code": 100, "info": "绘图成功", "path": filepath}
