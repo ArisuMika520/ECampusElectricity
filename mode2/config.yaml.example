@@ -1,0 +1,31 @@
+qq:
+  appid: ""
+  secret: ""
+
+electricity:
+  api_endpoint: "https://application.xiaofubao.com/app/electric/"
+  default_threshold: 20.0
+  shiroJID: ''
+  ymId: ''
+
+tracker:
+  check_interval: 300  # 订阅跟踪间隔(秒)
+  his_limit: 2400 # 每个房间的数据量上限，只保留最新的 his_limit 条数据。预计 1h 会产生一条新数据
+
+# PROJECT_ROOT
+path:
+  # 订阅列表文件路径
+  SUBSCRIPTION_LIST_FILE: 'data_files/sub.json' # sub
+    # 订阅历史文件路径
+  SUBSCRIPTION_HISTORY_FILE: 'data_files/his.json' # his
+    # 时间字符串格式
+  TIME_FORMAT: "%Y-%m-%d %H:%M:%S"
+    # 绘图输出目录
+  PLOT_DIR: 'data_files/plot' # plot
+  UPLOAD_RECORD_FILE: 'data_files/image_upload_records.json'
+
+# 图床上传器配置(自己跟据图床API自行配置，以及更改对应代码)
+uploader:
+  token: "" 
+  # 你要上传到的目标相册的 ID (数字)
+  album_id: ""
