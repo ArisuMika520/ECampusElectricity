@@ -161,8 +161,8 @@ class EnhancedQQBot(botpy.Client):
 /图形化 <类型> <楼栋> <房间号> [小时数]
 类型: 历史, 消耗
 小时数: 可选, 默认48
-示例: /图形 历史 10南 101
-示例: /图形 消耗 D9东 101 72
+示例: /图形化 历史 10南 101
+示例: /图形化 消耗 D9东 101 72
         """
         await message._api.post_group_message(
                 group_openid=message.group_openid,
@@ -182,3 +182,4 @@ if __name__ == "__main__":
         appid=config["qq"]["appid"],
         secret=config["qq"]["secret"]
     )
+
