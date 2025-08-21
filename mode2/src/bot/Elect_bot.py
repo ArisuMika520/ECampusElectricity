@@ -91,53 +91,55 @@ class EnhancedQQBot(botpy.Client):
                 
         # 电费图形化
         elif content.startswith("/图形化"):
-            plot_params = bot_command.Content_split.plot(content)
-            if plot_params:
-                result_dict = bot_command.plot.process(
-                    plot_type=plot_params["type"],
-                    room_name=plot_params["room_name"],
-                    time_span=plot_params["time_span"]
-                )
-                
-                if result_dict.get("code") == 200:
-                    try:
-                        image_url = result_dict.get("url")
-                        if not image_url:
-                            raise ValueError("图床返回的URL为空")
-
-                        _log.info(f"正在将图片URL上传到图床: {image_url}")
-                        upload_media = await message._api.post_group_file(
-                            group_openid=message.group_openid,
-                            file_type=1,
-                            url=image_url
-                        )
-                        _log.info("URL上传成功，获取到Media对象。")
-
+            if (bot_command.Content_split.plot(content)):
+                plot_params = bot_command.Content_split.plot(content)
+                if plot_params:
+                    result_dict = bot_command.plot.process(
+                        plot_type=plot_params["type"],
+                        room_name=plot_params["room_name"],
+                        time_span=plot_params["time_span"]
+                    )
+                    
+                    if result_dict.get("code") == 200:
+                        try:
+                            image_url = result_dict.get("url")
+                            if not image_url:
+                                raise ValueError("图床返回的URL为空")
+    
+                            _log.info(f"正在将图片URL上传到图床: {image_url}")
+                            upload_media = await message._api.post_group_file(
+                                group_openid=message.group_openid,
+                                file_type=1,
+                                url=image_url
+                            )
+                            _log.info("URL上传成功，获取到Media对象。")
+    
+                            await message._api.post_group_message(
+                                group_openid=message.group_openid,
+                                msg_type=7,
+                                msg_id=message.id,
+                                media=upload_media
+                            )
+                            _log.info("富媒体消息发送成功！")
+    
+                        except Exception as e:
+                            _log.error(f"发送富媒体消息过程中出现异常: {e}")
+                            await message._api.post_group_message(
+                                group_openid=message.group_openid,
+                                msg_type=0,
+                                content=f"图片已生成，但在发送时遇到问题，请联系管理员。错误: {e}",
+                                msg_id=message.id
+                            )
+                    else:
+                        error_info = result_dict.get("info", "未知错误，请查看后台日志。")
                         await message._api.post_group_message(
                             group_openid=message.group_openid,
-                            msg_type=7,
-                            msg_id=message.id,
-                            media=upload_media
-                        )
-                        _log.info("富媒体消息发送成功！")
-
-                    except Exception as e:
-                        _log.error(f"发送富媒体消息过程中出现异常: {e}")
-                        await message._api.post_group_message(
-                            group_openid=message.group_openid,
-                            msg_type=0,
-                            content=f"图片已生成，但在发送时遇到问题，请联系管理员。错误: {e}",
+                            msg_type=0, 
+                            content=f"❌ 操作失败: {error_info}",
                             msg_id=message.id
                         )
-                else:
-                    error_info = result_dict.get("info", "未知错误，请查看后台日志。")
-                    await message._api.post_group_message(
-                        group_openid=message.group_openid,
-                        msg_type=0, 
-                        content=f"❌ 操作失败: {error_info}",
-                        msg_id=message.id
-                    )
-            
+            else:
+                await self.send_group_help(message)
         else:
             await self.send_group_help(message)
     
@@ -182,4 +184,5 @@ if __name__ == "__main__":
         appid=config["qq"]["appid"],
         secret=config["qq"]["secret"]
     )
+
 
