@@ -88,6 +88,10 @@ ECampusElectricityBot/
 └── README.md
 ```
 
+## 详细分析文档
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ArisuMika520/ECampusElectricity)
+
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件
