@@ -21,7 +21,7 @@ class ImageUploader:
     - 维护一份上传记录，方便下次删除旧图。
     """
 
-    DEFAULT_BASE_URL = "https://7bu.top/api/v1"
+    DEFAULT_BASE_URL = ""
 
     def __init__(self, token: str, album_id: Optional[int], record_file_path: str, base_url: Optional[str] = None):
         if not token:
