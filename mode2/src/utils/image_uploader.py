@@ -2,7 +2,6 @@
 图片上传图床的工具类
 
 Build by ArisuMika
-Refactor by Codex
 """
 import json
 import logging
