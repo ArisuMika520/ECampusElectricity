@@ -23,6 +23,8 @@ path:
     # 绘图输出目录
   PLOT_DIR: 'data_files/plot' # plot
   UPLOAD_RECORD_FILE: 'data_files/image_upload_records.json'
+  # 偏移缓存保存目录
+  FLOOR_OFFSET_FILE: ''
 
 # 图床上传器配置(自己跟据图床API自行配置，以及更改对应代码)
 uploader:
