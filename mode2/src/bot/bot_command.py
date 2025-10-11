@@ -6,6 +6,7 @@ Build by ArisuMika
 import asyncio
 import sys
 import os
+import re
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from typing import Dict
 from botpy import logging
@@ -19,6 +20,10 @@ from botpy.ext.cog_yaml import read
 
 _log = logging.get_logger()
 config = read(os.path.join(os.path.dirname(__file__), '..', '..', 'config.yaml'))
+
+Electricity.configure_offset_file(
+    config.get('path', {}).get('FLOOR_OFFSET_FILE', 'data_files/floor_offset.json')
+)
 
 # 指令切分
 class Content_split:
@@ -61,26 +66,63 @@ class Content_split:
             return 0
         return parts[1] + ' ' + parts[2]
     
-    def plot(content):
+    def plot_history(content):
         """
-        解析图形化指令。
-        格式: /图形化 <类型> <楼栋> <房间号> [小时数]
+        解析历史图形指令
+        支持格式:
+            /图形化-历史 <楼栋> <房间号> [小时数]
+            /图形化历史 <楼栋> <房间号> [小时数]
         """
         parts = content.strip().split()
-        if len(parts) < 4:
+        args = parts[1:]
+
+        if len(args) >= 3 and args[2].isdigit():
+            building, room_token = args[0], args[1]
+            time_span = int(args[2])
+        elif len(args) >= 2:
+            building, room_token = args[0], args[1]
+            time_span = 48
+        elif len(args) == 1:
+            match = re.match(r"^(.+?)(\d{3,4})$", args[0])
+            if not match:
+                return None
+            building, room_token = match.group(1), match.group(2)
+            time_span = 48
+        else:
             return None
 
-        plot_type = parts[1]
-        if plot_type not in ["历史", "消耗"]:
+        room_name = f"{building} {room_token}"
+        return {"room_name": room_name, "time_span": time_span}
+
+    def plot_consumption(content):
+        """
+        解析消耗图形指令
+        支持格式:
+            /图形化-消耗 <楼栋> <房间号> [小时数]
+            /图形化消耗 <楼栋> <房间号> [小时数]
+            /图形化-消耗 <楼栋房间号> [小时数]
+        """
+        parts = content.strip().split()
+        args = parts[1:]
+        if not args:
             return None
 
-        room_name = f"{parts[2]} {parts[3]}"
-        time_span = 48  # 默认48小时
+        time_span = 48
+        if len(args) >= 3 and args[2].isdigit():
+            building, room_token = args[0], args[1]
+            time_span = int(args[2])
+        elif len(args) >= 2:
+            building, room_token = args[0], args[1]
+            time_span = 48
+        else:
+            token = args[0]
+            match = re.match(r"^(.+?)(\d{3,4})$", token)
+            if not match:
+                return None
+            building, room_token = match.group(1), match.group(2)
 
-        if len(parts) > 4 and parts[4].isdigit():
-            time_span = int(parts[4])
-        
-        return {"type": plot_type, "room_name": room_name, "time_span": time_span}
+        room_name = f"{building} {room_token}"
+        return {"room_name": room_name, "time_span": time_span}
     def predict(content):
         """
         预测指令请求

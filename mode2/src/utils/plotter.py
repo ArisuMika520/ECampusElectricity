@@ -327,5 +327,4 @@ class Elect_plot:
         finally:
             plt.close(fig)
 
-
         return {"code": 100, "info": "绘图成功", "path": filepath}

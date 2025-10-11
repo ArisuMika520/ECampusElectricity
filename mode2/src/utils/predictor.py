@@ -150,5 +150,4 @@ class predictor:
                 }
 
 
-
         return {"code": "101", "info": f"嘿嘿嘿~❤️杂鱼~杂鱼~💞\n订阅历史中不存在房间「{room_name}」的历史数据哦！"}
