@@ -9,7 +9,6 @@ class ECampusElectricity:
     def __init__(self, config=None):
         self.config = {
             'shiroJID': '',
-            'ymId': '',
             # 邮件服务器配置
             'smtp_server': 'smtp.qq.com',
             'smtp_port': 465,  # 使用SSL端口
@@ -102,7 +101,6 @@ class ECampusElectricity:
     def _request(self, uri, params):
         url = f'https://application.xiaofubao.com/app/electric/{uri}'
         params.update({
-            'ymId': self.config['ymId'],
             'platform': 'YUNMA_APP'
         })
         headers = {
@@ -192,7 +190,6 @@ class ECampusElectricity:
 if __name__ == "__main__":
     config = {
         'shiroJID': '',
-        'ymId': '',
         # 邮件服务器配置
         'smtp_server': 'smtp.qq.com',
         'smtp_port': 465,  # 使用SSL端口
@@ -234,4 +231,5 @@ if __name__ == "__main__":
         if(surplus < threshold):
             # 检查余额并发送告警（使用全局阈值）
             ece.check_and_alert(room_info, recipients)
+
         sleep(3600)#检测间隔1 hour
