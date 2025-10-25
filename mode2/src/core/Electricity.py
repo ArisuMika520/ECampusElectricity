@@ -206,7 +206,6 @@ class ECampusElectricity:
     def __init__(self, config=None):
         self.config = {
             'shiroJID': '',
-            'ymId': '',
             'alert_threshold': 20.0 
         }
         if config:
@@ -293,7 +292,6 @@ class ECampusElectricity:
     def _request(self, uri, params):
         url = f'https://application.xiaofubao.com/app/electric/{uri}'
         params.update({
-            'ymId': self.config['ymId'],
             'platform': 'YUNMA_APP'
         })
         headers = {
@@ -345,3 +343,4 @@ class ECampusElectricity:
         name = room_info['data']['roomName']
         return (surplus,name)
     
+
