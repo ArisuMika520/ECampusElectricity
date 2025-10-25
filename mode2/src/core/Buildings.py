@@ -2,6 +2,8 @@
 寝室楼索引存储表
 - 获取寝室楼的索引get_buildingIndex
 
+这里要自己做一个脚本去遍历扫一遍
+
 Build by ArisuMika
 """
 Building = [
@@ -49,4 +51,5 @@ Building = [
 ]
 
 def get_buildingIndex(area,buildingNum):
+
     return Building[area][buildingNum]
