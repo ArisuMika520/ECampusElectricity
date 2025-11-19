@@ -596,10 +596,19 @@ class Elect_plot:
         )
         ax.set_xlabel("时间段中点", fontproperties=my_font, fontsize=12)
         ax.set_ylabel("每小时电费消耗 (元/小时)", fontproperties=my_font, fontsize=12)
-        ax.legend(
-            [bars, line_raw, line_ma],
-            labels=["每小时平均消耗率", "消耗变化曲线", "消耗趋势"],
-            prop=my_font)
+
+        # 图例：使用代理 Artist 明确指定样式与含义
+        from matplotlib.lines import Line2D
+        from matplotlib.patches import Patch
+
+        legend_handles = [
+            Patch(facecolor="skyblue", edgecolor="none"),  # 柱状图
+            Line2D([0], [0], color="royalblue", linewidth=2),  # 穿点曲线
+            Line2D([0], [0], color="lightcoral", linewidth=1.8, linestyle="--"),  # 趋势线
+        ]
+        legend_labels = ["每小时平均消耗率", "消耗变化曲线", "消耗趋势"]
+
+        ax.legend(legend_handles, legend_labels, prop=my_font)
         ax.grid(True, which="both", linestyle="--", linewidth=0.5, axis="y")
 
         # 右下角标注过滤信息
