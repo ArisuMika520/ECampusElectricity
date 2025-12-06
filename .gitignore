@@ -171,20 +171,17 @@ cython_debug/
 .pypirc
 
 
-# cache
-mode2/__pycache__/
+# Bot 项目相关
+Bot/__pycache__/
+Bot/config.yaml
+Bot/data_files/plot
+Bot/data_files/sub.json
+Bot/data_files/his.json
+Bot/data_files/image_upload_records.json
 
-# key
-mode2/config.yaml
-
-# data files
-mode2/data_files/plot
-mode2/data_files/sub.json
-mode2/data_files/his.json
-mode2/data_files/image_upload_records.json
-
-# Branch-specific ignores
-# In main branch: ignore mode1 (belongs to Web branch)
-mode1/
-# In Web branch: ignore mode2 (belongs to main branch)
-# mode2/  # Uncomment if needed in Web branch
+# Web 项目相关
+Web/backend/venv/
+Web/backend/.env
+Web/frontend/.next/
+Web/frontend/node_modules/
+Web/node_modules/
