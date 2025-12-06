@@ -270,7 +270,7 @@ npm run clean:frontend   # 清理前端环境
 ### 从 Bot 版本迁移数据
 
 ```bash
-cd Web/backend
+cd backend
 source venv/bin/activate
 python scripts/migrate_from_mode2.py
 ```
