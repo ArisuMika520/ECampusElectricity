@@ -1,0 +1,37 @@
+# GitHub Linguist 配置
+# 用于控制 GitHub 仓库语言统计
+
+# 排除 node_modules 和构建文件（这些不应该计入语言统计）
+node_modules/** linguist-vendored
+**/node_modules/** linguist-vendored
+**/.next/** linguist-vendored
+**/dist/** linguist-vendored
+**/build/** linguist-vendored
+
+# 排除生成的文件
+**/*.pyc linguist-generated
+**/__pycache__/** linguist-generated
+**/venv/** linguist-vendored
+**/env/** linguist-vendored
+
+# 排除数据文件
+**/*.json linguist-documentation
+**/*.yaml linguist-documentation
+**/*.yml linguist-documentation
+
+# 排除字体文件
+**/*.ttf linguist-vendored
+**/*.otf linguist-vendored
+
+# 排除图片文件
+**/*.png linguist-vendored
+**/*.jpg linguist-vendored
+**/*.jpeg linguist-vendored
+**/*.gif linguist-vendored
+**/*.svg linguist-vendored
+
+# 排除缓存和临时文件
+**/.cache/** linguist-vendored
+**/tmp/** linguist-vendored
+**/temp/** linguist-vendored
+
