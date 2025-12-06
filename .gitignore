@@ -177,6 +177,8 @@ mode2/__pycache__/
 # key
 mode2/config.yaml
 
-# his
-mode2/his.json
-mode2/plot
+# data files
+mode2/data_files/plot
+mode2/data_files/sub.json
+mode2/data_files/his.json
+mode2/data_files/image_upload_records.json
