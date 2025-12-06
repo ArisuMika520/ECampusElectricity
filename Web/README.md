@@ -1,4 +1,4 @@
-# Mode1 WebUI - 电费监控系统
+# Web 版本 - 电费监控系统
 
 基于 FastAPI + Next.js 的校园电费监控和管理系统，支持多用户、实时日志监控、历史数据可视化和邮件告警。
 
@@ -22,7 +22,7 @@
 ## 项目结构
 
 ```
-mode1/
+Web/
 ├── package.json          # 统一 npm 脚本管理
 ├── scripts/              # 启动脚本
 │   ├── dev.sh           # 开发模式启动
@@ -56,17 +56,17 @@ mode1/
 
 ### 重要提示
 
-**所有命令都需要在 `mode1` 目录下执行！**
+**所有命令都需要在 `Web` 目录下执行！**
 
 ```bash
-cd mode1  # 先进入 mode1 目录
+cd Web  # 先进入 Web 目录
 ```
 
 ### 一键设置（推荐）
 
 ```bash
-# 1. 进入 mode1 目录
-cd mode1
+# 1. 进入 Web 目录
+cd Web
 
 # 2. 一键设置环境（安装所有依赖）
 npm run setup
@@ -142,7 +142,7 @@ npm run db:check
 ./scripts/manage.sh db init          # 初始化数据库
 ./scripts/manage.sh db check         # 检查数据库状态
 ./scripts/manage.sh db migrate       # 数据库迁移
-./scripts/manage.sh db migrate-mode2 # 从 Mode2 迁移数据
+./scripts/manage.sh db migrate-mode2 # 从 Bot 版本迁移数据
 
 # 清理环境
 ./scripts/manage.sh clean backend   # 清理后端环境
@@ -176,7 +176,7 @@ npm run install:frontend # 安装前端依赖
 npm run db:init          # 初始化数据库（创建表结构）
 npm run db:migrate       # 数据库迁移（添加字段等）
 npm run db:check         # 检查数据库状态
-npm run db:migrate-mode2 # 从 Mode2 迁移数据
+npm run db:migrate-mode2 # 从 Bot 版本迁移数据
 
 # 清理操作
 npm run clean            # 清理所有环境
@@ -267,7 +267,7 @@ npm run clean:frontend   # 清理前端环境
 
 ## 数据迁移
 
-### 从 mode2 迁移数据
+### 从 Bot 版本迁移数据
 
 ```bash
 cd backend
@@ -277,8 +277,8 @@ python scripts/migrate_from_mode2.py
 
 这将：
 1. 创建默认用户（用户名: `migrated_user`, 密码: `changeme`）
-2. 导入 mode2 的订阅数据
-3. 导入 mode2 的历史数据
+2. 导入 Bot 版本的订阅数据
+3. 导入 Bot 版本的历史数据
 
 **注意**: 迁移后请立即修改默认用户密码！
 

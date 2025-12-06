@@ -1,6 +1,6 @@
 ## ECampusElectricity
 <div align="center"> 
-  <p><strong>对于采用易校园的大学寝室电费获取</strong></p> 
+  <p><strong>对于采用易校园的大学寝室电费获取</strong></p>
   <p>可查询电费，电费余额告警</p>
 </div>
 
@@ -18,91 +18,127 @@
 * [x] 历史电费数据分析
 * [x] 电费消耗/余额图形化
 * [x] 实现数据库偏移缓存命中自动更新、异常处理
+* [x] WebUI 图形化界面（FastAPI + Next.js）
+* [x] PostgreSQL 数据库存储
+* [x] 实时日志监控（WebSocket）
       
-## 🔄 未来更新计划
-* [ ] 将mode1重构为Web版
-* [ ] 实现Web前端控制后端程序，管理数据库以及配置文件等等，不用再ssh到服务器去修改
-* [ ] 修改Bot的交互逻辑
-* [ ] 将数据存储由JSON转移至PostgreSQL
-* [ ] 实现QQ机器人的id绑定，一键查询
-
 ## 🏗️ 项目模式
-* mode1使用邮箱告警，采用STMP，默认QQ邮箱，其他自行更改
-* mode2则采用QQ机器人，需学QQ机器人（官方API）的使用和部署，可以通过机器人查询指定寝室的电费
 
-## ❗‼️⁉️警告
-如果你是ios+小程序抓不到相关数据，目前已找到解决方法，正在编写教程中
+本项目提供两种实现方式，**请根据您的需求选择**：
+
+### 🌐 Web 版本（推荐）
+- **位置**: `Web/` 目录
+- **技术栈**: FastAPI + Next.js + PostgreSQL
+- **特点**: 
+  - 现代化的 WebUI 界面
+  - 多用户认证系统
+  - 实时日志监控
+  - 历史数据可视化
+  - 管理员面板
+  - 数据库存储（PostgreSQL）
+- **适用场景**: 需要 Web 界面管理、多用户使用、需要数据持久化
+
+### 🤖 Bot 版本
+- **位置**: `Bot/` 目录
+- **技术栈**: Python + QQ 机器人 API
+- **特点**:
+  - QQ 机器人交互
+  - 通过 QQ 查询电费
+  - 电费消耗预测
+  - 图形化展示
+  - JSON 文件存储
+- **适用场景**: 喜欢 QQ 机器人交互、简单部署、个人使用
 
 ## 🚀 快速开始
-* 模拟器或者安卓手机安装 ***易校园*** 和 ***HttpCanary***，IOS手机则安装***Stream***，然后去打开你充电费的小程序或者服务号？（反正就是你充电费的地方）
-（具体抓包方法自行搜索学习）
-* 登录易校园后开启抓包，在里面点一点东西，随后在 ***HttpCanary***或者***Stream***抓到的包中看参数
-* 需要找到一个参数：**shiroJID**
-  （**shiroJID** 在cookie里）
-* 随后在代码中找到**shiroJID**，相应填入即可
-* mode2的机器人快速开始不了，需要根据个人具体情况进行部分的重构（例如图床API，appid等）
+
+### 前置要求
+- Python 3.10+
+- Node.js 18+（仅 Web 版本需要）
+- PostgreSQL 12+（仅 Web 版本需要）
+
+### 抓取 shiroJID
+* 模拟器或者安卓手机安装 ***易校园*** 和 ***HttpCanary***，IOS手机则安装***Stream***
+* 登录易校园后开启抓包，在里面点一点东西
+* 在抓到的包中找到参数：**shiroJID**（在 cookie 里）
+* 将 **shiroJID** 填入代码配置中
+
+### Web 版本快速开始
+
+```bash
+# 1. 进入 Web 目录
+cd Web
+
+# 2. 一键设置环境
+npm run setup
+
+# 3. 配置环境变量
+cp backend/.env.example backend/.env
+# 编辑 backend/.env，设置数据库连接等
+
+# 4. 初始化数据库
+npm run db:init
+
+# 5. 启动开发模式
+npm run dev
+```
+
+详细文档请查看 [Web/README.md](Web/README.md)
+
+### Bot 版本快速开始
+
+```bash
+# 1. 进入 Bot 目录
+cd Bot
+
+# 2. 安装依赖
+pip install -r requirements.txt
+
+# 3. 配置 config.yaml
+cp config.yaml.example config.yaml
+# 编辑 config.yaml，填入 shiroJID、QQ 机器人配置等
+
+# 4. 运行机器人
+python src/bot/Elect_bot.py
+```
+
+**注意**: Bot 版本需要根据个人具体情况进行部分重构（例如图床API、appid等）
 
 ## ⚙️ 项目结构
-### mode1
+
 ```
 ECampusElectricity/
-└── mode1/
-     └── Electricity.py # 服务器后台脚本，查询电费和邮箱告警
-```
-### mode 2
-```
-ECampusElectricityBot/
-├── src/
-│   └── elect_bot/
-│       ├── __init__.py
-│       ├── core/                      # 核心逻辑模块
-│       │   ├── __init__.py
-│       │   ├── Electricity.py         # 封装所有与电费查询相关的API交互
-│       │   └── Building.py            # 负责提供楼栋数据索引
-│       │
-│       ├── data/                      # 数据模块
-│       │   ├── __init__.py
-│       │   └── sub_storage.py         # 负责JSON文件的读写（订阅信息、历史记录）
-│       │
-│       ├── bot/                       # Bot相关模块
-│       │   ├── __init__.py
-│       │   ├── bot_command.py         # 存放所有具体的命令方法（如订阅、查询）
-│       │   └── Elect_bot.py           # 机器人入口，负责启动和注册处理器
-│       │
-│       └── utils/                     # 工具函数模块
-│           ├── __init__.py
-│           ├── plotter.py             # 专门用于绘制电费历史折线图
-│           ├── image_uploader.py      # 图片上传图床的脚本
-│           └── predictor.py           # 专门用于预测剩余时间的逻辑
-│
-├── scripts/                         # 独立脚本目录
-│   └── Elect_tracker.py             # 重构后的电费定时追踪脚本
-│
-├── data_files/                      # 存放数据
-│   ├── sub.json                     # 订阅数据
-│   ├── his.json                     # 历史数据
-│   ├── image_upload_records.json    # 图床上传的旧图片key（负责删除旧图片）
-│   └── plot/                        # 图形数据
-│
-├── assets/                          # 存放静态
-│   └── fonts/
-│       ├── YaHei Ubuntu Mono.ttf
-│       └── simhei.ttf
-│
-├── tests/                           # 测试代码目录
-│
-├── config.yaml.example              # 配置模板
-├── .gitignore
-└── README.md
+├── Web/                    # WebUI 版本（FastAPI + Next.js）
+│   ├── backend/            # FastAPI 后端
+│   ├── frontend/           # Next.js 前端
+│   └── scripts/            # 启动脚本
+├── Bot/                    # QQ 机器人版本
+│   ├── src/
+│   │   ├── bot/           # Bot 相关模块
+│   │   ├── core/          # 核心逻辑模块
+│   │   ├── data/          # 数据模块
+│   │   └── utils/         # 工具函数模块
+│   ├── scripts/           # 独立脚本目录
+│   ├── data_files/        # 存放数据（JSON）
+│   └── assets/            # 存放静态资源
+├── example/                # 示例文件
+├── scripts/                # 工具脚本
+├── README.md               # 本文件
+└── LICENSE                 # 许可证
 ```
 
-## 详细分析文档
+## 📖 详细文档
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/ArisuMika520/ECampusElectricity)
+- **Web 版本**: 查看 [Web/README.md](Web/README.md)
+- **Bot 版本**: 查看 [Bot/README.md](Bot/README.md)（如果存在）
+
+## ❗ 警告
+
+如果你是 iOS + 小程序抓不到相关数据，目前已找到解决方法，正在编写教程中。
 
 ## 📄 许可证
 
 本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件
+
 ## 📬 联系我们
 
 - **GitHub Issues**: [提交问题或建议](https://github.com/ArisuMika520/ECampusElectricity/issues)
@@ -116,13 +152,13 @@ ECampusElectricityBot/
 
 ---
 
-## 注意:
+## 注意
+
 <div>
-<p>本项目的buildingData数据只适用于本人学校，如需修改，请通过遍历抓取字典中的所有楼寝室与对应的索引</p>
-<p>跟据具体寝室结构调整具体代码（如果你要用mode2的话）</p>
+<p>本项目的 buildingData 数据只适用于本人学校，如需修改，请通过遍历抓取字典中的所有楼寝室与对应的索引</p>
+<p>根据具体寝室结构调整具体代码（如果你要用 Bot 版本的话）</p>
 </div>
 
-
-
 ## 参考
-参照 [Example](https://github.com/ArisuMika520/ECampusElectricity/tree/main/example) 
+
+参照 [Example](https://github.com/ArisuMika520/ECampusElectricity/tree/main/example)

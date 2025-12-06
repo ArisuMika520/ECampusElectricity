@@ -228,7 +228,7 @@ db_operation() {
             python scripts/migrate_add_admin.py
             ;;
         migrate-mode2)
-            print_header "从 Mode2 迁移数据"
+            print_header "从 Bot 版本迁移数据"
             python scripts/migrate_from_mode2.py
             ;;
         *)
@@ -237,7 +237,7 @@ db_operation() {
             echo -e "  ${CYAN}init${NC}          # 初始化数据库"
             echo -e "  ${CYAN}check${NC}         # 检查数据库状态"
             echo -e "  ${CYAN}migrate${NC}       # 数据库迁移"
-            echo -e "  ${CYAN}migrate-mode2${NC} # 从 Mode2 迁移数据"
+            echo -e "  ${CYAN}migrate-mode2${NC} # 从 Bot 版本迁移数据"
             exit 1
             ;;
     esac
@@ -311,7 +311,7 @@ show_help() {
     echo -e "  ${YELLOW}init${NC}          # 初始化数据库"
     echo -e "  ${YELLOW}check${NC}         # 检查数据库状态"
     echo -e "  ${YELLOW}migrate${NC}       # 数据库迁移（添加管理员字段）"
-    echo -e "  ${YELLOW}migrate-mode2${NC} # 从 Mode2 迁移数据"
+    echo -e "  ${YELLOW}migrate-mode2${NC} # 从 Bot 版本迁移数据"
     
     echo -e "\n${CYAN}清理目标:${NC}"
     echo -e "  ${YELLOW}backend${NC}  # 清理后端环境"

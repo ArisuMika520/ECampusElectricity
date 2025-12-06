@@ -1,5 +1,5 @@
 """
-Migration script to import data from mode2 JSON files to PostgreSQL.
+Migration script to import data from Bot version JSON files to PostgreSQL.
 """
 import json
 import os

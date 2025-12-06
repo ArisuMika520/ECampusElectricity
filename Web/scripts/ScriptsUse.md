@@ -46,7 +46,7 @@
 # 数据库迁移（添加管理员字段等）
 ./scripts/manage.sh db migrate
 
-# 从 Mode2 迁移数据
+# 从 Bot 版本迁移数据
 ./scripts/manage.sh db migrate-mode2
 ```
 

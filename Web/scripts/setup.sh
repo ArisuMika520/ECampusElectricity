@@ -9,7 +9,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}ECampus Electricity - Mode1 环境设置${NC}"
+echo -e "${BLUE}ECampus Electricity - Web 版本环境设置${NC}"
 echo -e "${BLUE}========================================${NC}"
 
 # 1. 检查系统依赖
