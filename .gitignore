@@ -182,3 +182,9 @@ mode2/data_files/plot
 mode2/data_files/sub.json
 mode2/data_files/his.json
 mode2/data_files/image_upload_records.json
+
+# Branch-specific ignores
+# In main branch: ignore mode1 (belongs to Web branch)
+mode1/
+# In Web branch: ignore mode2 (belongs to main branch)
+# mode2/  # Uncomment if needed in Web branch
