@@ -1,5 +1,5 @@
 """
-Migration script to import data from Bot version JSON files to PostgreSQL.
+从 Bot 版本迁移数据到 PostgreSQL 的脚本。
 """
 import json
 import os
@@ -8,7 +8,6 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 
-# Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlmodel import Session, select
@@ -21,9 +20,9 @@ from app.utils.auth import get_password_hash
 
 
 def load_json_file(filepath: str) -> Any:
-    """Load JSON file."""
+    """加载 JSON 文件。"""
     if not os.path.exists(filepath):
-        print(f"Warning: File {filepath} does not exist")
+        print(f"警告: 文件 {filepath} 不存在")
         return []
     
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -31,16 +30,14 @@ def load_json_file(filepath: str) -> Any:
 
 
 def create_default_user(session: Session) -> User:
-    """Create a default user for migration."""
-    # Check if default user exists
+    """创建默认用户用于迁移。"""
     statement = select(User).where(User.username == "migrated_user")
     existing_user = session.exec(statement).first()
     
     if existing_user:
-        print("Default user already exists, using existing user")
+        print("默认用户已存在，使用现有用户")
         return existing_user
     
-    # Create new default user
     user = User(
         username="migrated_user",
         email="migrated@example.com",
@@ -50,7 +47,7 @@ def create_default_user(session: Session) -> User:
     session.add(user)
     session.commit()
     session.refresh(user)
-    print(f"Created default user: {user.username} (ID: {user.id})")
+    print(f"已创建默认用户: {user.username} (ID: {user.id})")
     return user
 
 
@@ -60,37 +57,26 @@ def migrate_subscriptions(
     sub_list: List[str],
     sub_his: List[Dict[str, Any]]
 ) -> Dict[str, str]:
-    """
-    Migrate subscriptions from JSON to database.
-    
-    Returns:
-        Dictionary mapping room_name to subscription_id
-    """
+    """从 JSON 迁移订阅数据到数据库。返回房间名到订阅ID的映射。"""
     room_to_subscription = {}
     
     for room_name in sub_list:
-        # Find history for this room
         history_data = next((item for item in sub_his if item.get('name') == room_name), None)
         
         if not history_data:
-            print(f"Warning: No history found for room {room_name}, skipping")
+            print(f"警告: 房间 {room_name} 未找到历史数据，跳过")
             continue
         
-        # Parse room name to extract area, building, floor, room
-        # Format: "D9东 425" or "10南 606"
         parts = room_name.strip().split(' ')
         if len(parts) != 2:
-            print(f"Warning: Invalid room name format: {room_name}, skipping")
+            print(f"警告: 无效的房间名格式: {room_name}，跳过")
             continue
         
-        # For now, we'll use placeholder values
-        # In production, you might want to parse these from the room name
         area_id = "1" if parts[0].startswith('D') else "0"
         building_code = parts[0]
-        floor_code = "1"  # Default, should be parsed from room number
+        floor_code = "1"
         room_code = parts[1]
         
-        # Extract floor from room number (e.g., "425" -> floor "4")
         if len(room_code) >= 3:
             try:
                 floor_num = int(room_code[0])
@@ -98,7 +84,6 @@ def migrate_subscriptions(
             except ValueError:
                 pass
         
-        # Check if subscription already exists
         statement = select(Subscription).where(
             Subscription.user_id == user.id,
             Subscription.room_name == room_name
@@ -106,11 +91,10 @@ def migrate_subscriptions(
         existing = session.exec(statement).first()
         
         if existing:
-            print(f"Subscription for {room_name} already exists, skipping")
+            print(f"房间 {room_name} 的订阅已存在，跳过")
             room_to_subscription[room_name] = str(existing.id)
             continue
         
-        # Create subscription
         subscription = Subscription(
             user_id=user.id,
             room_name=room_name,
@@ -118,8 +102,8 @@ def migrate_subscriptions(
             building_code=building_code,
             floor_code=floor_code,
             room_code=room_code,
-            threshold=20.0,  # Default threshold
-            email_recipients=[],  # Will need to be configured manually
+            threshold=20.0,
+            email_recipients=[],
             is_active=True
         )
         session.add(subscription)
@@ -127,7 +111,7 @@ def migrate_subscriptions(
         session.refresh(subscription)
         
         room_to_subscription[room_name] = str(subscription.id)
-        print(f"Created subscription for {room_name} (ID: {subscription.id})")
+        print(f"已创建房间 {room_name} 的订阅 (ID: {subscription.id})")
     
     return room_to_subscription
 
@@ -137,7 +121,7 @@ def migrate_history(
     room_to_subscription: Dict[str, str],
     sub_his: List[Dict[str, Any]]
 ):
-    """Migrate history data from JSON to database."""
+    """从 JSON 迁移历史数据到数据库。"""
     for history_item in sub_his:
         room_name = history_item.get('name')
         if not room_name:
@@ -145,7 +129,7 @@ def migrate_history(
         
         subscription_id = room_to_subscription.get(room_name)
         if not subscription_id:
-            print(f"Warning: No subscription found for {room_name}, skipping history")
+            print(f"警告: 房间 {room_name} 未找到订阅，跳过历史数据")
             continue
         
         history_records = history_item.get('his', [])
@@ -158,17 +142,14 @@ def migrate_history(
                 continue
             
             try:
-                # Parse timestamp
                 timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 try:
                     timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
                 except ValueError:
-                    print(f"Warning: Invalid timestamp format: {timestamp_str}, skipping")
+                    print(f"警告: 无效的时间戳格式: {timestamp_str}，跳过")
                     continue
             
-            # Check if record already exists
-            from sqlmodel import select
             statement = select(ElectricityHistory).where(
                 ElectricityHistory.subscription_id == subscription_id,
                 ElectricityHistory.timestamp == timestamp,
@@ -179,7 +160,6 @@ def migrate_history(
             if existing:
                 continue
             
-            # Create history record
             history = ElectricityHistory(
                 subscription_id=subscription_id,
                 surplus=float(value),
@@ -188,56 +168,47 @@ def migrate_history(
             session.add(history)
         
         session.commit()
-        print(f"Migrated {len(history_records)} history records for {room_name}")
+        print(f"已迁移房间 {room_name} 的 {len(history_records)} 条历史记录")
 
 
 def main():
-    """Main migration function."""
-    print("Starting migration from Bot version to PostgreSQL...")
+    """主迁移函数。"""
+    print("开始从 Bot 版本迁移数据到 PostgreSQL...")
     
-    # Initialize database
     init_db()
     
-    # Paths to Bot version data files
-    # Script location: Web/backend/scripts/migrate_from_mode2.py
-    # Need to go up to project root, then into Bot/
     bot_base = Path(__file__).parent.parent.parent.parent / "Bot"
     sub_file = bot_base / "data_files" / "sub.json"
     his_file = bot_base / "data_files" / "his.json"
     
     if not sub_file.exists():
-        print(f"Error: Subscription file not found: {sub_file}")
+        print(f"错误: 未找到订阅文件: {sub_file}")
         return
     
     if not his_file.exists():
-        print(f"Error: History file not found: {his_file}")
+        print(f"错误: 未找到历史文件: {his_file}")
         return
     
-    # Load JSON files
-    print("Loading JSON files...")
+    print("正在加载 JSON 文件...")
     sub_list = load_json_file(str(sub_file))
     sub_his = load_json_file(str(his_file))
     
-    print(f"Found {len(sub_list)} subscriptions and {len(sub_his)} history entries")
+    print(f"找到 {len(sub_list)} 个订阅和 {len(sub_his)} 条历史记录")
     
-    # Create database session
     with Session(engine) as session:
-        # Create default user
         user = create_default_user(session)
         
-        # Migrate subscriptions
-        print("\nMigrating subscriptions...")
+        print("\n正在迁移订阅...")
         room_to_subscription = migrate_subscriptions(session, user, sub_list, sub_his)
         
-        # Migrate history
-        print("\nMigrating history data...")
+        print("\n正在迁移历史数据...")
         migrate_history(session, room_to_subscription, sub_his)
         
-        print("\nMigration completed successfully!")
-        print(f"\nDefault user credentials:")
-        print(f"  Username: migrated_user")
-        print(f"  Password: changeme")
-        print(f"\nPlease change the password after first login!")
+        print("\n迁移完成！")
+        print(f"\n默认用户凭据:")
+        print(f"  用户名: migrated_user")
+        print(f"  密码: changeme")
+        print(f"\n请首次登录后立即修改密码！")
 
 
 if __name__ == "__main__":
