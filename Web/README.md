@@ -270,15 +270,17 @@ npm run clean:frontend   # 清理前端环境
 ### 从 Bot 版本迁移数据
 
 ```bash
-cd backend
+cd Web/backend
 source venv/bin/activate
 python scripts/migrate_from_mode2.py
 ```
 
+**前提条件**: 确保 `Bot/data_files/` 目录存在且包含 `sub.json` 和 `his.json` 文件。
+
 这将：
 1. 创建默认用户（用户名: `migrated_user`, 密码: `changeme`）
-2. 导入 Bot 版本的订阅数据
-3. 导入 Bot 版本的历史数据
+2. 从 `Bot/data_files/sub.json` 导入订阅数据
+3. 从 `Bot/data_files/his.json` 导入历史数据
 
 **注意**: 迁移后请立即修改默认用户密码！
 

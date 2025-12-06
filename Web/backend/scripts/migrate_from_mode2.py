@@ -1,5 +1,5 @@
 """
-Migration script to import data from Bot version JSON files to PostgreSQL.
+Migration script to import data from mode2 JSON files to PostgreSQL.
 """
 import json
 import os
@@ -193,15 +193,17 @@ def migrate_history(
 
 def main():
     """Main migration function."""
-    print("Starting migration from mode2 to PostgreSQL...")
+    print("Starting migration from Bot version to PostgreSQL...")
     
     # Initialize database
     init_db()
     
-    # Paths to mode2 data files
-    mode2_base = Path(__file__).parent.parent.parent / "mode2"
-    sub_file = mode2_base / "data_files" / "sub.json"
-    his_file = mode2_base / "data_files" / "his.json"
+    # Paths to Bot version data files
+    # Script location: Web/backend/scripts/migrate_from_mode2.py
+    # Need to go up to project root, then into Bot/
+    bot_base = Path(__file__).parent.parent.parent.parent / "Bot"
+    sub_file = bot_base / "data_files" / "sub.json"
+    his_file = bot_base / "data_files" / "his.json"
     
     if not sub_file.exists():
         print(f"Error: Subscription file not found: {sub_file}")
@@ -240,4 +242,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
