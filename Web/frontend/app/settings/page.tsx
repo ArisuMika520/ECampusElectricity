@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/layout/navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,19 +10,21 @@ import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 
+const ALLOWED_KEYS = [
+  'SHIRO_JID',
+  'SMTP_SERVER',
+  'SMTP_PORT',
+  'SMTP_USER',
+  'SMTP_PASS',
+  'FROM_EMAIL',
+];
+
 export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [config, setConfig] = useState({
-    shiroJID: '',
-    smtp_server: 'smtp.qq.com',
-    smtp_port: 465,
-    smtp_user: '',
-    smtp_pass: '',
-    from_email: '',
-    use_tls: false,
-  });
+  const [envConfig, setEnvConfig] = useState<Record<string, any>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -34,17 +36,20 @@ export default function SettingsPage() {
 
   const fetchConfig = async () => {
     try {
-      const response = await api.get('/api/config');
-      const configs = response.data;
-      
-      const newConfig: any = {};
-      configs.forEach((item: any) => {
-        if (item.key in config) {
-          newConfig[item.key] = item.value.value || item.value;
+      const me = await api.get('/api/auth/me');
+      setIsAdmin(me.data.is_admin);
+      if (!me.data.is_admin) {
+        router.push('/dashboard');
+        return;
+      }
+      const response = await api.get('/api/admin/env');
+      const filtered: Record<string, any> = {};
+      ALLOWED_KEYS.forEach((k) => {
+        if (response.data.hasOwnProperty(k)) {
+          filtered[k] = response.data[k] ?? '';
         }
       });
-      
-      setConfig({ ...config, ...newConfig });
+      setEnvConfig(filtered);
     } catch (error) {
       console.error('Failed to fetch config:', error);
     } finally {
@@ -52,11 +57,11 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = async (key: string, value: any) => {
+  const handleSave = async () => {
     setSaving(true);
     try {
-      await api.put(`/api/config/${key}`, { value: { value } });
-      alert('保存成功');
+      await api.put('/api/admin/env', envConfig);
+      alert('保存成功（需要重启服务生效）');
     } catch (error: any) {
       alert(error.response?.data?.detail || '保存失败');
     } finally {
@@ -79,97 +84,42 @@ export default function SettingsPage() {
       <div className="container mx-auto p-6">
         <h1 className="mb-6 text-3xl font-bold">系统设置</h1>
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>电费API配置</CardTitle>
-            <CardDescription>配置易校园API认证信息</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="shiroJID">ShiroJID</Label>
-              <Input
-                id="shiroJID"
-                type="password"
-                value={config.shiroJID}
-                onChange={(e) => setConfig({ ...config, shiroJID: e.target.value })}
-                placeholder="输入 shiroJID"
-              />
-              <Button
-                onClick={() => handleSave('shiroJID', config.shiroJID)}
-                disabled={saving}
-              >
-                保存
+        {!isAdmin ? (
+          <div className="text-red-600">需要管理员权限</div>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>系统环境参数</CardTitle>
+              <CardDescription>仅展示关键参数（邮箱配置、ShiroJID），保存后需重启生效</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {ALLOWED_KEYS.map((key) => {
+                const hints: Record<string, string> = {
+                  SHIRO_JID: '易校园登录凭证，必填，否则无法查询电费',
+                  SMTP_SERVER: '邮件服务器地址，如 smtp.qq.com',
+                  SMTP_PORT: '邮件服务器端口，如 465',
+                  SMTP_USER: '邮件登录用户名/邮箱',
+                  SMTP_PASS: '邮件授权码/密码',
+                  FROM_EMAIL: '邮件发件人地址',
+                };
+                return (
+                  <div key={key} className="space-y-1">
+                    <Label htmlFor={key}>{key}</Label>
+                    <Input
+                      id={key}
+                      value={envConfig[key] ?? ''}
+                      onChange={(e) => setEnvConfig({ ...envConfig, [key]: e.target.value })}
+                    />
+                    <p className="text-xs text-gray-500">{hints[key]}</p>
+                  </div>
+                );
+              })}
+              <Button onClick={handleSave} disabled={saving}>
+                保存（需重启）
               </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>SMTP邮件配置</CardTitle>
-            <CardDescription>配置邮件服务器用于发送告警</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="smtp_server">SMTP服务器</Label>
-                <Input
-                  id="smtp_server"
-                  value={config.smtp_server}
-                  onChange={(e) => setConfig({ ...config, smtp_server: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="smtp_port">SMTP端口</Label>
-                <Input
-                  id="smtp_port"
-                  type="number"
-                  value={config.smtp_port}
-                  onChange={(e) => setConfig({ ...config, smtp_port: parseInt(e.target.value) })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="smtp_user">SMTP用户名</Label>
-              <Input
-                id="smtp_user"
-                value={config.smtp_user}
-                onChange={(e) => setConfig({ ...config, smtp_user: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="smtp_pass">SMTP密码</Label>
-              <Input
-                id="smtp_pass"
-                type="password"
-                value={config.smtp_pass}
-                onChange={(e) => setConfig({ ...config, smtp_pass: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="from_email">发件人邮箱</Label>
-              <Input
-                id="from_email"
-                type="email"
-                value={config.from_email}
-                onChange={(e) => setConfig({ ...config, from_email: e.target.value })}
-              />
-            </div>
-            <Button
-              onClick={() => {
-                handleSave('smtp_server', config.smtp_server);
-                handleSave('smtp_port', config.smtp_port);
-                handleSave('smtp_user', config.smtp_user);
-                handleSave('smtp_pass', config.smtp_pass);
-                handleSave('from_email', config.from_email);
-                handleSave('use_tls', config.use_tls);
-              }}
-              disabled={saving}
-            >
-              保存SMTP配置
-            </Button>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

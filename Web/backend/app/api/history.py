@@ -27,7 +27,7 @@ async def get_subscription_history(
 ):
     """获取订阅的历史数据"""
     service = SubscriptionService(session)
-    subscription = service.get_subscription(subscription_id, current_user.id)
+    subscription = service.get_subscription(subscription_id, current_user.id, is_admin=current_user.is_admin)
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -58,7 +58,7 @@ async def get_history_stats(
 ):
     """获取订阅历史数据的统计信息"""
     service = SubscriptionService(session)
-    subscription = service.get_subscription(subscription_id, current_user.id)
+    subscription = service.get_subscription(subscription_id, current_user.id, is_admin=current_user.is_admin)
     if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

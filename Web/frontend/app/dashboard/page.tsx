@@ -15,6 +15,7 @@ interface Subscription {
   room_name: string;
   threshold: number;
   is_active: boolean;
+  is_owner?: boolean;
 }
 
 export default function DashboardPage() {

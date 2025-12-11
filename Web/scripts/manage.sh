@@ -176,7 +176,7 @@ start_dev() {
     npx concurrently \
         --names "后端,前端" \
         --prefix-colors "blue,green" \
-        "cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000" \
+        "bash -lc 'cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000'" \
         "cd frontend && npm run dev"
 }
 
@@ -198,7 +198,7 @@ start_prod() {
     npx concurrently \
         --names "后端,前端" \
         --prefix-colors "blue,green" \
-        "cd backend && source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000" \
+        "bash -lc 'cd backend && source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000'" \
         "cd frontend && npm start"
 }
 

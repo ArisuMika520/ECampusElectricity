@@ -5,6 +5,7 @@ from typing import List
 from app.models.subscription import Subscription
 from app.models.history import ElectricityHistory
 from app.services.subscription import SubscriptionService
+from app.models.user_subscription import UserSubscription
 from app.services.electricity import ElectricityService
 from app.services.alert import AlertService
 from app.config import settings
@@ -38,7 +39,16 @@ class TrackerService:
         """检查单个订阅"""
         logger.info(f"Checking subscription: {subscription.room_name} (ID: {subscription.id})")
         
-        electricity_service = ElectricityService(self.session, str(subscription.user_id))
+        # 选择一个关联用户作为查询/告警主体，优先 owner
+        owner_stmt = (
+            select(UserSubscription)
+            .where(UserSubscription.subscription_id == subscription.id)
+            .order_by(UserSubscription.is_owner.desc(), UserSubscription.created_at.asc())
+        )
+        mapping = self.session.exec(owner_stmt).first()
+        target_user_id = str(mapping.user_id) if mapping else str(subscription.user_id)
+
+        electricity_service = ElectricityService(self.session, target_user_id)
         room_info = electricity_service.query_room_surplus(
             subscription.area_id,
             subscription.building_code,
@@ -68,7 +78,7 @@ class TrackerService:
         # 检查阈值并发送告警
         if surplus < subscription.threshold:
             logger.warning(f"Room {subscription.room_name} is below threshold ({subscription.threshold} yuan)")
-            alert_service = AlertService(self.session, str(subscription.user_id))
+            alert_service = AlertService(self.session, target_user_id)
             success = alert_service.send_alert(subscription, room_info)
             if success:
                 logger.info(f"Alert sent for {subscription.room_name}")

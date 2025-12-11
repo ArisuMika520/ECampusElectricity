@@ -1,7 +1,7 @@
 """管理员 API 路由：用户管理和系统配置"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Dict, Any
 import uuid
 from app.database import get_session
 from app.models.user import User
@@ -10,6 +10,7 @@ from app.schemas.admin import UserCreate, UserUpdate, SystemConfigUpdate, UserRe
 from app.utils.auth import get_password_hash, verify_password
 from app.dependencies import get_current_user
 from datetime import datetime
+from app.config import settings
 
 router = APIRouter()
 
@@ -196,6 +197,57 @@ async def update_system_config(
     return {
         "allow_registration": config_data.allow_registration
     }
+
+
+ENV_KEYS = [
+    "SMTP_SERVER",
+    "SMTP_PORT",
+    "SMTP_USER",
+    "SMTP_PASS",
+    "FROM_EMAIL",
+    "SHIRO_JID",
+]
+
+
+@router.get("/env", response_model=Dict[str, Any])
+async def get_env_settings(
+    current_user: User = Depends(require_admin),
+    session: Session = Depends(get_session)
+):
+    """获取当前运行时 Settings（仅管理员），并合并数据库覆盖项"""
+    data = {k: v for k, v in settings.model_dump().items() if k in ENV_KEYS}
+    override_stmt = select(Config).where(Config.key == "env_overrides")
+    override_cfg = session.exec(override_stmt).first()
+    if override_cfg:
+        overrides = {k: v for k, v in (override_cfg.value or {}).items() if k in ENV_KEYS}
+        data.update(overrides)
+    return data
+
+
+@router.put("/env", response_model=Dict[str, Any])
+async def update_env_settings(
+    payload: Dict[str, Any],
+    current_user: User = Depends(require_admin),
+    session: Session = Depends(get_session)
+):
+    """更新 Settings 覆盖项（仅管理员）。写入数据库，需重启后生效。"""
+    overrides = {k: v for k, v in payload.items() if k in ENV_KEYS}
+
+    stmt = select(Config).where(Config.key == "env_overrides")
+    cfg = session.exec(stmt).first()
+    if cfg:
+        cfg.value = overrides
+        cfg.updated_at = datetime.utcnow()
+    else:
+        cfg = Config(
+            key="env_overrides",
+            value=overrides,
+            updated_at=datetime.utcnow()
+        )
+        session.add(cfg)
+    session.commit()
+    session.refresh(cfg)
+    return overrides
 
 
 

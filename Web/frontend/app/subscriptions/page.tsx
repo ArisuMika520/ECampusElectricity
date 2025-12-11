@@ -26,6 +26,7 @@ interface Subscription {
   threshold: number;
   email_recipients: string[];
   is_active: boolean;
+  is_owner?: boolean;
 }
 
 export default function SubscriptionsPage() {
@@ -34,11 +35,8 @@ export default function SubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    room_name: '',
-    area_id: '',
-    building_code: '',
-    floor_code: '',
-    room_code: '',
+    building_name: '',
+    room_number: '',
     threshold: 20.0,
     email_recipients: '',
   });
@@ -71,17 +69,16 @@ export default function SubscriptionsPage() {
         .filter(email => email);
       
       await api.post('/api/subscriptions', {
-        ...formData,
+        building_name: formData.building_name.trim(),
+        room_number: formData.room_number.trim(),
+        threshold: formData.threshold,
         email_recipients: emailList,
       });
       
       setDialogOpen(false);
       setFormData({
-        room_name: '',
-        area_id: '',
-        building_code: '',
-        floor_code: '',
-        room_code: '',
+        building_name: '',
+        room_number: '',
         threshold: 20.0,
         email_recipients: '',
       });
@@ -130,68 +127,41 @@ export default function SubscriptionsPage() {
               </DialogHeader>
               <form onSubmit={handleSubmit}>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="room_name">房间名称</Label>
-                      <Input
-                        id="room_name"
-                        value={formData.room_name}
-                        onChange={(e) => setFormData({ ...formData, room_name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="threshold">告警阈值 (元)</Label>
-                      <Input
-                        id="threshold"
-                        type="number"
-                        step="0.1"
-                        value={formData.threshold}
-                        onChange={(e) => setFormData({ ...formData, threshold: parseFloat(e.target.value) })}
-                        required
-                      />
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="building_name">楼栋</Label>
+                    <Input
+                      id="building_name"
+                      placeholder="如 10南 或 D9东"
+                      value={formData.building_name}
+                      onChange={(e) => setFormData({ ...formData, building_name: e.target.value })}
+                      required
+                    />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="area_id">校区ID</Label>
-                      <Input
-                        id="area_id"
-                        value={formData.area_id}
-                        onChange={(e) => setFormData({ ...formData, area_id: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="building_code">楼栋代码</Label>
-                      <Input
-                        id="building_code"
-                        value={formData.building_code}
-                        onChange={(e) => setFormData({ ...formData, building_code: e.target.value })}
-                        required
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="room_number">房间号</Label>
+                    <Input
+                      id="room_number"
+                      placeholder="如 101 或 425"
+                      value={formData.room_number}
+                      onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
+                      required
+                    />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="floor_code">楼层代码</Label>
-                      <Input
-                        id="floor_code"
-                        value={formData.floor_code}
-                        onChange={(e) => setFormData({ ...formData, floor_code: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="room_code">房间代码</Label>
-                      <Input
-                        id="room_code"
-                        value={formData.room_code}
-                        onChange={(e) => setFormData({ ...formData, room_code: e.target.value })}
-                        required
-                      />
-                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="threshold">告警阈值 (元)</Label>
+                    <Input
+                      id="threshold"
+                      type="number"
+                      step="0.1"
+                      value={formData.threshold}
+                      onChange={(e) => setFormData({ ...formData, threshold: parseFloat(e.target.value) })}
+                      required
+                    />
                   </div>
+                </div>
                   <div className="space-y-2">
                     <Label htmlFor="email_recipients">收件人邮箱 (逗号分隔)</Label>
                     <Input
@@ -239,9 +209,10 @@ export default function SubscriptionsPage() {
                       <Button
                         variant="destructive"
                         size="sm"
+                        disabled={!sub.is_owner}
                         onClick={() => handleDelete(sub.id)}
                       >
-                        删除
+                        {sub.is_owner ? '删除' : '无权限'}
                       </Button>
                     </div>
                   </div>

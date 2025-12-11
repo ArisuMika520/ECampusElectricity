@@ -7,14 +7,17 @@ import uuid
 
 class SubscriptionBase(BaseModel):
     """订阅基础模式"""
-    room_name: str
-    area_id: str
-    building_code: str
-    floor_code: str
-    room_code: str
+    room_name: Optional[str] = None
+    area_id: Optional[str] = None
+    building_code: Optional[str] = None
+    floor_code: Optional[str] = None
+    room_code: Optional[str] = None
     threshold: float = 20.0
     email_recipients: List[str] = []
     is_active: bool = True
+    # 简化输入：楼栋、房间号（如 D9东 / 101）
+    building_name: Optional[str] = None
+    room_number: Optional[str] = None
 
 
 class SubscriptionCreate(SubscriptionBase):
@@ -38,6 +41,7 @@ class SubscriptionResponse(SubscriptionBase):
     """订阅响应模式"""
     id: uuid.UUID
     user_id: uuid.UUID
+    is_owner: Optional[bool] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     
