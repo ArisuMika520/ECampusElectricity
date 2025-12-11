@@ -1,4 +1,3 @@
-"""用户认证 API 路由"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from datetime import timedelta
@@ -19,7 +18,6 @@ async def register(
     user_data: UserRegister,
     session: Session = Depends(get_session)
 ):
-    """注册新用户（仅在注册功能开启时）"""
     from app.models.config import Config
     statement = select(Config).where(Config.key == "allow_registration")
     config = session.exec(statement).first()
@@ -70,14 +68,12 @@ async def login(
     user_data: UserLogin,
     session: Session = Depends(get_session)
 ):
-    """用户登录并获取访问令牌。首次登录的用户自动成为管理员"""
     try:
         statement = select(User)
         all_users = list(session.exec(statement).all())
         
         logger.info(f"Total users in database: {len(all_users)}")
         
-        # 如果没有用户，将首次登录的用户创建为管理员
         if len(all_users) == 0:
             logger.info(f"Creating first admin user: {user_data.username}")
             hashed_password = get_password_hash(user_data.password)
@@ -152,5 +148,4 @@ async def login(
 async def get_current_user_info(
     current_user: User = Depends(get_current_user)
 ):
-    """获取当前用户信息"""
     return current_user

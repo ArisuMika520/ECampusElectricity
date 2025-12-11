@@ -138,15 +138,40 @@ setup_all() {
     setup_tools
     
     print_header "环境设置完成"
-    echo -e "\n使用以下命令："
-    echo -e "  ${CYAN}./scripts/manage.sh dev${NC}      # 启动开发模式"
-    echo -e "  ${CYAN}./scripts/manage.sh start${NC}    # 启动生产模式"
-    echo -e "  ${CYAN}./scripts/manage.sh db init${NC}  # 初始化数据库"
+    echo -e "\n${GREEN}已安装的依赖:${NC}"
+    echo -e "  ${CYAN}后端 Python 依赖:${NC}"
+    echo -e "    - fastapi, uvicorn, sqlmodel, psycopg2-binary"
+    echo -e "    - pydantic, python-jose, passlib, requests"
+    echo -e "    - websockets, email-validator, alembic"
+    echo -e "  ${CYAN}前端 Node.js 依赖:${NC}"
+    echo -e "    - next.js, react, react-dom"
+    echo -e "    - tailwindcss, shadcn/ui, recharts"
+    echo -e "    - axios, websocket, framer-motion"
+    echo -e "  ${CYAN}开发工具:${NC}"
+    echo -e "    - concurrently (用于同时运行前后端)"
+    echo -e "\n${GREEN}下一步操作:${NC}"
+    echo -e "  1. 配置环境变量: ${CYAN}cp backend/.env.example backend/.env${NC}"
+    echo -e "  2. 编辑配置文件并设置数据库连接和 shiroJID"
+    echo -e "  3. 初始化数据库: ${CYAN}./scripts/manage.sh db init${NC}"
+    echo -e "\n${GREEN}启动命令:${NC}"
+    echo -e "  ${CYAN}./scripts/manage.sh dev${NC}      # 启动开发模式（前后端同时启动，支持热重载）"
+    echo -e "  ${CYAN}./scripts/manage.sh start${NC}    # 启动生产模式（需要先构建前端）"
+    echo -e "\n${GREEN}访问地址:${NC}"
+    echo -e "  前端: ${CYAN}http://localhost:3000${NC}"
+    echo -e "  后端 API: ${CYAN}http://localhost:8000${NC}"
+    echo -e "  API 文档: ${CYAN}http://localhost:8000/docs${NC}"
 }
 
 # 启动开发模式
 start_dev() {
     print_header "启动开发模式"
+    LOG_DIR="$PROJECT_ROOT/logs"
+    BACKEND_LOG="$LOG_DIR/backend-dev.log"
+    FRONTEND_LOG="$LOG_DIR/frontend-dev.log"
+    mkdir -p "$LOG_DIR"
+    # 清空旧日志
+    : > "$BACKEND_LOG"
+    : > "$FRONTEND_LOG"
     
     # 检查环境
     if [ ! -d "backend/venv" ]; then
@@ -171,13 +196,14 @@ start_dev() {
     echo -e "${CYAN}后端:${NC} http://localhost:8000"
     echo -e "${CYAN}前端:${NC} http://localhost:3000"
     echo -e "${CYAN}API 文档:${NC} http://localhost:8000/docs"
+    echo -e "${CYAN}日志输出:${NC} $BACKEND_LOG (后端), $FRONTEND_LOG (前端)"
     echo -e "\n${YELLOW}按 Ctrl+C 停止所有服务${NC}\n"
     
     npx concurrently \
         --names "后端,前端" \
         --prefix-colors "blue,green" \
-        "bash -lc 'cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000'" \
-        "cd frontend && npm run dev"
+        "cd backend && . venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 | tee -a \"$BACKEND_LOG\"" \
+        "cd frontend && npm run dev | tee -a \"$FRONTEND_LOG\""
 }
 
 # 启动生产模式
@@ -198,7 +224,7 @@ start_prod() {
     npx concurrently \
         --names "后端,前端" \
         --prefix-colors "blue,green" \
-        "bash -lc 'cd backend && source venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000'" \
+        "cd backend && . venv/bin/activate && uvicorn app.main:app --host 0.0.0.0 --port 8000" \
         "cd frontend && npm start"
 }
 

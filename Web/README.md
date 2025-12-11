@@ -284,14 +284,6 @@ python scripts/migrate_from_mode2.py
 
 **注意**: 迁移后请立即修改默认用户密码！
 
-## 定时任务
-
-系统会自动定时查询所有活跃订阅的电费：
-- 默认间隔：3600 秒（1小时）
-- 可在 `backend/.env` 中配置 `TRACKER_CHECK_INTERVAL`
-
-当电费余额低于阈值时，系统会自动发送告警邮件。
-
 ## 环境变量配置
 
 ### 后端环境变量 (backend/.env)
@@ -323,8 +315,6 @@ USE_TLS=false
 # 易校园 API
 SHIRO_JID=your-shiro-jid-here
 
-# 定时任务
-TRACKER_CHECK_INTERVAL=3600
 HISTORY_LIMIT=2400
 ```
 

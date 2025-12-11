@@ -1,0 +1,21 @@
+# PM2 忽略文件
+node_modules/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.env.local
+.env.*.local
+.next/
+dist/
+build/
+*.log
+.git/
+.DS_Store
+*.swp
+*.swo
+*~
+

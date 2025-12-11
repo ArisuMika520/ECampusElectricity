@@ -16,7 +16,6 @@ from app.models.user import User
 from app.models.subscription import Subscription
 from app.models.history import ElectricityHistory
 from app.models.config import Config
-from app.models.user_subscription import UserSubscription
 from app.utils.auth import get_password_hash
 
 
@@ -85,25 +84,14 @@ def migrate_subscriptions(
             except ValueError:
                 pass
         
-        statement = select(Subscription).where(Subscription.room_name == room_name)
+        statement = select(Subscription).where(
+            Subscription.user_id == user.id,
+            Subscription.room_name == room_name
+        )
         existing = session.exec(statement).first()
         
         if existing:
-            # 确保迁移用户具备关联
-            mapping_stmt = select(UserSubscription).where(
-                UserSubscription.subscription_id == existing.id,
-                UserSubscription.user_id == user.id
-            )
-            mapping = session.exec(mapping_stmt).first()
-            if not mapping:
-                mapping = UserSubscription(
-                    user_id=user.id,
-                    subscription_id=existing.id,
-                    is_owner=False
-                )
-                session.add(mapping)
-                session.commit()
-            print(f"房间 {room_name} 的订阅已存在，复用并关联用户")
+            print(f"房间 {room_name} 的订阅已存在，跳过")
             room_to_subscription[room_name] = str(existing.id)
             continue
         
@@ -121,15 +109,7 @@ def migrate_subscriptions(
         session.add(subscription)
         session.commit()
         session.refresh(subscription)
-
-        mapping = UserSubscription(
-            user_id=user.id,
-            subscription_id=subscription.id,
-            is_owner=True
-        )
-        session.add(mapping)
-        session.commit()
-
+        
         room_to_subscription[room_name] = str(subscription.id)
         print(f"已创建房间 {room_name} 的订阅 (ID: {subscription.id})")
     

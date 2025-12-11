@@ -41,19 +41,24 @@ class AlertService:
         
         return config_dict
     
-    def send_alert(self, subscription: Subscription, room_info: Dict[str, Any]) -> bool:
+    def send_alert(self, subscription: Subscription, room_info: Dict[str, Any], email_recipients: list = None, threshold: float = None) -> bool:
         """
         发送订阅的告警邮件
         
         Args:
             subscription: 订阅对象
             room_info: 来自 query_room_surplus 的房间信息
+            email_recipients: 邮件收件人列表（可选，覆盖订阅的默认值）
+            threshold: 告警阈值（可选，覆盖订阅的默认值）
             
         Returns:
             成功发送返回 True，否则返回 False
         """
-        if not subscription.email_recipients:
+        recipients = email_recipients or subscription.email_recipients
+        if not recipients:
             return False
+        
+        alert_threshold = threshold or subscription.threshold
         
         smtp_config = self._load_smtp_config()
         if not smtp_config.get('smtp_user') or not smtp_config.get('smtp_pass'):
@@ -68,7 +73,11 @@ class AlertService:
             **smtp_config
         }
         ece = ECampusElectricity(config)
-        return ece.check_and_alert(room_info, subscription.email_recipients, subscription.threshold)
+        return ece.check_and_alert(room_info, recipients, alert_threshold)
 
+
+
+
+        return ece.check_and_alert(room_info, recipients, alert_threshold)
 
 

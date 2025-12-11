@@ -42,6 +42,9 @@ class SubscriptionResponse(SubscriptionBase):
     id: uuid.UUID
     user_id: uuid.UUID
     is_owner: Optional[bool] = None
+    current_surplus: Optional[float] = None
+    last_query_time: Optional[datetime] = None
+    email_recipient_count: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     

@@ -3,6 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 from typing import Optional
 import uuid
+from app.utils.timezone import now_naive
 
 
 class ElectricityHistory(SQLModel, table=True):
@@ -12,8 +13,8 @@ class ElectricityHistory(SQLModel, table=True):
     id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True)
     subscription_id: uuid.UUID = Field(foreign_key="subscriptions.id", index=True)
     surplus: float = Field(description="电费余额（元）")
-    timestamp: datetime = Field(default_factory=datetime.utcnow, index=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=now_naive, index=True)
+    created_at: datetime = Field(default_factory=now_naive)
 
 
 

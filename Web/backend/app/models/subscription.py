@@ -11,9 +11,8 @@ class Subscription(SQLModel, table=True):
     __tablename__ = "subscriptions"
     
     id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True)
-    # 保留首个创建者，告警等场景可使用
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
-    room_name: str = Field(max_length=100, index=True, unique=True)
+    room_name: str = Field(max_length=100, index=True)
     area_id: str = Field(max_length=50)
     building_code: str = Field(max_length=50)
     floor_code: str = Field(max_length=50)

@@ -118,5 +118,98 @@
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+}
+
+@layer utilities {
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+  
+  #terminal-container .xterm {
+    font-family: "Courier New", "Consolas", "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
+    font-feature-settings: "liga" 0, "calt" 0 !important;
+    text-rendering: optimizeSpeed !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  #terminal-container .xterm-screen {
+    font-family: "Courier New", "Consolas", "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
+  }
+  
+  #terminal-container .xterm-viewport {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  
+  #terminal-container .xterm-viewport::-webkit-scrollbar {
+    width: 12px;
+  }
+  
+  #terminal-container .xterm-viewport::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+  }
+  
+  #terminal-container .xterm-viewport::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  
+  #terminal-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+    background-clip: padding-box;
+  }
+  
+  .dark #terminal-container .xterm-viewport::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .dark #terminal-container .xterm-viewport::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  
+  .dark #terminal-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  #terminal-container .xterm-viewport {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark #terminal-container .xterm-viewport {
+    scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.05);
+  }
+  
+  #terminal-container .xterm-rows {
+    line-height: 1.4 !important;
+  }
+  
+  #terminal-container .xterm-char {
+    font-family: "Courier New", "Consolas", "Monaco", "Menlo", "Ubuntu Mono", monospace !important;
+    letter-spacing: 0.5px !important;
   }
 }

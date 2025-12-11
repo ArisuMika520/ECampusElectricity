@@ -1,24 +1,16 @@
-"""用户与订阅的关联表（多对一共享订阅）"""
+"""用户与订阅的关联模型"""
 from sqlmodel import SQLModel, Field
-import uuid
 from datetime import datetime
-from typing import Optional
+import uuid
 
 
 class UserSubscription(SQLModel, table=True):
-    """用户订阅关联：一个房间订阅可被多用户共享访问"""
+    """多对多映射：用户拥有的订阅"""
     __tablename__ = "user_subscriptions"
 
-    id: Optional[uuid.UUID] = Field(default_factory=uuid.uuid4, primary_key=True)
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     user_id: uuid.UUID = Field(foreign_key="users.id", index=True)
     subscription_id: uuid.UUID = Field(foreign_key="subscriptions.id", index=True)
-    is_owner: bool = Field(default=False, description="是否为首个创建该订阅的用户")
+    is_owner: bool = Field(default=False, description="是否为订阅创建者/拥有者")
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-
 

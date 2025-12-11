@@ -1,55 +1,66 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Save, Settings as SettingsIcon, Mail, Key, RefreshCw, CheckCircle2 } from 'lucide-react';
 import Navbar from '@/components/layout/navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageTransition } from '@/components/ui/page-transition';
+import { CardAnimated } from '@/components/ui/card-animated';
 import api from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
-
-const ALLOWED_KEYS = [
-  'SHIRO_JID',
-  'SMTP_SERVER',
-  'SMTP_PORT',
-  'SMTP_USER',
-  'SMTP_PASS',
-  'FROM_EMAIL',
-];
 
 export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [envConfig, setEnvConfig] = useState<Record<string, any>>({});
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [savedKey, setSavedKey] = useState<string | null>(null);
+  const [config, setConfig] = useState({
+    shiroJID: '',
+    smtp_server: 'smtp.qq.com',
+    smtp_port: 465,
+    smtp_user: '',
+    smtp_pass: '',
+    from_email: '',
+    use_tls: false,
+  });
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/login');
+    if (typeof window === 'undefined') {
+      setLoading(false);
       return;
     }
-    fetchConfig();
-  }, [router]);
+    
+    const checkAuth = async () => {
+      if (!isAuthenticated()) {
+        router.push('/login');
+        setLoading(false);
+        return;
+      }
+      await fetchConfig();
+    };
+    
+    checkAuth();
+  }, []);
 
   const fetchConfig = async () => {
     try {
-      const me = await api.get('/api/auth/me');
-      setIsAdmin(me.data.is_admin);
-      if (!me.data.is_admin) {
-        router.push('/dashboard');
-        return;
-      }
-      const response = await api.get('/api/admin/env');
-      const filtered: Record<string, any> = {};
-      ALLOWED_KEYS.forEach((k) => {
-        if (response.data.hasOwnProperty(k)) {
-          filtered[k] = response.data[k] ?? '';
+      setLoading(true);
+      const response = await api.get('/api/config');
+      const configs = response.data || [];
+
+      const newConfig: any = {};
+      configs.forEach((item: any) => {
+        if (item.key in config) {
+          newConfig[item.key] = item.value.value || item.value;
         }
       });
-      setEnvConfig(filtered);
+      
+      setConfig((prev) => ({ ...prev, ...newConfig }));
     } catch (error) {
       console.error('Failed to fetch config:', error);
     } finally {
@@ -57,13 +68,31 @@ export default function SettingsPage() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (key: string, value: any) => {
     setSaving(true);
+    setSavedKey(key);
     try {
-      await api.put('/api/admin/env', envConfig);
-      alert('保存成功（需要重启服务生效）');
+      await api.put(`/api/config/${key}`, { value: { value } });
+      setTimeout(() => setSavedKey(null), 2000);
     } catch (error: any) {
       alert(error.response?.data?.detail || '保存失败');
+      setSavedKey(null);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAllSMTP = async () => {
+    setSaving(true);
+    try {
+      await Promise.all([
+        handleSave('smtp_server', config.smtp_server),
+        handleSave('smtp_port', config.smtp_port),
+        handleSave('smtp_user', config.smtp_user),
+        handleSave('smtp_pass', config.smtp_pass),
+        handleSave('from_email', config.from_email),
+        handleSave('use_tls', config.use_tls),
+      ]);
     } finally {
       setSaving(false);
     }
@@ -71,59 +100,175 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div>
+      <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto p-4">加载中...</div>
+        <div className="container mx-auto p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center justify-center h-[60vh]"
+          >
+            <div className="text-center">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="inline-block mb-4"
+              >
+                <RefreshCw className="h-8 w-8 text-primary" />
+              </motion.div>
+              <p className="text-muted-foreground">加载中...</p>
+            </div>
+          </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto p-6">
-        <h1 className="mb-6 text-3xl font-bold">系统设置</h1>
+      <PageTransition>
+        <div className="container mx-auto p-6 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3"
+          >
+            <SettingsIcon className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                系统设置
+              </h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                配置系统参数和邮件服务
+              </p>
+            </div>
+          </motion.div>
 
-        {!isAdmin ? (
-          <div className="text-red-600">需要管理员权限</div>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>系统环境参数</CardTitle>
-              <CardDescription>仅展示关键参数（邮箱配置、ShiroJID），保存后需重启生效</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {ALLOWED_KEYS.map((key) => {
-                const hints: Record<string, string> = {
-                  SHIRO_JID: '易校园登录凭证，必填，否则无法查询电费',
-                  SMTP_SERVER: '邮件服务器地址，如 smtp.qq.com',
-                  SMTP_PORT: '邮件服务器端口，如 465',
-                  SMTP_USER: '邮件登录用户名/邮箱',
-                  SMTP_PASS: '邮件授权码/密码',
-                  FROM_EMAIL: '邮件发件人地址',
-                };
-                return (
-                  <div key={key} className="space-y-1">
-                    <Label htmlFor={key}>{key}</Label>
+          <CardAnimated delay={0.1}>
+            <Card className="transition-all hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Key className="h-5 w-5 text-primary" />
+                  <CardTitle>电费API配置</CardTitle>
+                </div>
+                <CardDescription>配置易校园API认证信息</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="shiroJID">ShiroJID</Label>
+                  <Input
+                    id="shiroJID"
+                    type="password"
+                    value={config.shiroJID}
+                    onChange={(e) => setConfig({ ...config, shiroJID: e.target.value })}
+                    placeholder="输入 shiroJID"
+                    className="transition-all focus:scale-[1.01]"
+                  />
+                  <Button
+                    onClick={() => handleSave('shiroJID', config.shiroJID)}
+                    disabled={saving}
+                    className="transition-all hover:scale-105"
+                  >
+                    {savedKey === 'shiroJID' ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        已保存
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        保存
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </CardAnimated>
+
+          <CardAnimated delay={0.2}>
+            <Card className="transition-all hover:shadow-lg">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <CardTitle>SMTP邮件配置</CardTitle>
+                </div>
+                <CardDescription>配置邮件服务器用于发送告警</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_server">SMTP服务器</Label>
                     <Input
-                      id={key}
-                      value={envConfig[key] ?? ''}
-                      onChange={(e) => setEnvConfig({ ...envConfig, [key]: e.target.value })}
+                      id="smtp_server"
+                      value={config.smtp_server}
+                      onChange={(e) => setConfig({ ...config, smtp_server: e.target.value })}
+                      className="transition-all focus:scale-[1.01]"
                     />
-                    <p className="text-xs text-gray-500">{hints[key]}</p>
                   </div>
-                );
-              })}
-              <Button onClick={handleSave} disabled={saving}>
-                保存（需重启）
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smtp_port">SMTP端口</Label>
+                    <Input
+                      id="smtp_port"
+                      type="number"
+                      value={config.smtp_port}
+                      onChange={(e) => setConfig({ ...config, smtp_port: parseInt(e.target.value) })}
+                      className="transition-all focus:scale-[1.01]"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_user">SMTP用户名</Label>
+                  <Input
+                    id="smtp_user"
+                    value={config.smtp_user}
+                    onChange={(e) => setConfig({ ...config, smtp_user: e.target.value })}
+                    className="transition-all focus:scale-[1.01]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="smtp_pass">SMTP密码</Label>
+                  <Input
+                    id="smtp_pass"
+                    type="password"
+                    value={config.smtp_pass}
+                    onChange={(e) => setConfig({ ...config, smtp_pass: e.target.value })}
+                    className="transition-all focus:scale-[1.01]"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="from_email">发件人邮箱</Label>
+                  <Input
+                    id="from_email"
+                    type="email"
+                    value={config.from_email}
+                    onChange={(e) => setConfig({ ...config, from_email: e.target.value })}
+                    className="transition-all focus:scale-[1.01]"
+                  />
+                </div>
+                <Button
+                  onClick={handleSaveAllSMTP}
+                  disabled={saving}
+                  className="transition-all hover:scale-105"
+                >
+                  {savedKey && savedKey.startsWith('smtp') ? (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      已保存
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      保存SMTP配置
+                    </>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </CardAnimated>
+        </div>
+      </PageTransition>
     </div>
   );
 }
-
-
-

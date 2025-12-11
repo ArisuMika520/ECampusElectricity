@@ -1,4 +1,3 @@
-"""日志 API 路由"""
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
 from typing import List, Optional
@@ -8,6 +7,7 @@ from app.models.user import User
 from app.models.log import Log
 from app.schemas.log import LogResponse
 from app.dependencies import get_current_user
+from app.utils.timezone import to_shanghai_naive
 
 router = APIRouter()
 
@@ -23,7 +23,6 @@ async def get_logs(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """获取日志（支持过滤）"""
     statement = select(Log)
     
     if level:
@@ -39,5 +38,16 @@ async def get_logs(
     statement = statement.offset(skip).limit(limit)
     
     logs = list(session.exec(statement).all())
-    return logs
+    result = []
+    for log in logs:
+        timestamp = log.timestamp if log.timestamp else datetime.utcnow()
+        log_dict = {
+            "id": log.id,
+            "level": log.level,
+            "message": log.message,
+            "module": log.module,
+            "timestamp": to_shanghai_naive(timestamp)
+        }
+        result.append(LogResponse(**log_dict))
+    return result
 

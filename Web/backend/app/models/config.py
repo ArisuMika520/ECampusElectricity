@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Optional, Any, Dict
 import uuid
 import json
+from app.utils.timezone import now_naive
 
 
 class Config(SQLModel, table=True):
@@ -15,5 +16,5 @@ class Config(SQLModel, table=True):
     user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="users.id", index=True)
     key: str = Field(unique=True, index=True, max_length=100)
     value: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=now_naive)
 

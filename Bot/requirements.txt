@@ -1,0 +1,15 @@
+# QQ 机器人框架
+botpy>=1.0.0
+
+# HTTP 请求
+requests>=2.31.0
+
+# 数据处理和可视化
+numpy>=1.24.0
+scipy>=1.10.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# 配置文件解析
+pyyaml>=6.0
+

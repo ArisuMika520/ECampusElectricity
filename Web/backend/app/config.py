@@ -34,7 +34,6 @@ class Settings(BaseSettings):
     SHIRO_JID: Optional[str] = None
     API_BASE_URL: str = "https://application.xiaofubao.com/app/electric"
     
-    TRACKER_CHECK_INTERVAL: int = 3600
     HISTORY_LIMIT: int = 2400
     
     class Config:

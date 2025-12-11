@@ -1,7 +1,5 @@
-"""定时电费查询跟踪服务"""
-from sqlmodel import Session
+from sqlmodel import Session, select
 from datetime import datetime, timedelta
-from typing import List
 from app.models.subscription import Subscription
 from app.models.history import ElectricityHistory
 from app.services.subscription import SubscriptionService
@@ -15,13 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class TrackerService:
-    """电费使用跟踪服务"""
-    
     def __init__(self, session: Session):
         self.session = session
     
     def check_all_subscriptions(self):
-        """检查所有活跃订阅并更新历史记录"""
         logger.info("Starting scheduled electricity check")
         
         service = SubscriptionService(self.session)
@@ -36,10 +31,8 @@ class TrackerService:
                 logger.error(f"Error checking subscription {subscription.id}: {e}")
     
     def _check_subscription(self, subscription: Subscription):
-        """检查单个订阅"""
         logger.info(f"Checking subscription: {subscription.room_name} (ID: {subscription.id})")
         
-        # 选择一个关联用户作为查询/告警主体，优先 owner
         owner_stmt = (
             select(UserSubscription)
             .where(UserSubscription.subscription_id == subscription.id)
@@ -49,12 +42,7 @@ class TrackerService:
         target_user_id = str(mapping.user_id) if mapping else str(subscription.user_id)
 
         electricity_service = ElectricityService(self.session, target_user_id)
-        room_info = electricity_service.query_room_surplus(
-            subscription.area_id,
-            subscription.building_code,
-            subscription.floor_code,
-            subscription.room_code
-        )
+        room_info = electricity_service.query_room_surplus_by_room_name(subscription.room_name)
         
         if room_info.get('error') != 0:
             logger.warning(f"Failed to query electricity for {subscription.room_name}: {room_info.get('error_description', 'Unknown error')}")
@@ -75,7 +63,6 @@ class TrackerService:
             self.session.commit()
             logger.info(f"Added history record for {subscription.room_name}")
         
-        # 检查阈值并发送告警
         if surplus < subscription.threshold:
             logger.warning(f"Room {subscription.room_name} is below threshold ({subscription.threshold} yuan)")
             alert_service = AlertService(self.session, target_user_id)
@@ -85,11 +72,9 @@ class TrackerService:
             else:
                 logger.warning(f"Failed to send alert for {subscription.room_name}")
         
-        # 清理旧的历史记录
         self._cleanup_old_history(subscription.id)
     
     def _should_add_history(self, subscription_id, surplus: float) -> bool:
-        """判断是否应该添加历史记录"""
         from sqlmodel import select
         statement = select(ElectricityHistory).where(
             ElectricityHistory.subscription_id == subscription_id
@@ -100,7 +85,6 @@ class TrackerService:
         if not latest:
             return True
         
-        # 如果值相同且时间差小于 2 小时，则不添加
         if latest.surplus == surplus:
             time_diff = datetime.utcnow() - latest.timestamp
             if time_diff < timedelta(hours=2):
@@ -109,7 +93,6 @@ class TrackerService:
         return True
     
     def _cleanup_old_history(self, subscription_id):
-        """清理超出限制的旧历史记录"""
         from sqlmodel import select, func
         count_statement = select(func.count(ElectricityHistory.id)).where(
             ElectricityHistory.subscription_id == subscription_id
@@ -117,7 +100,6 @@ class TrackerService:
         count = self.session.exec(count_statement).first()
         
         if count and count > settings.HISTORY_LIMIT:
-            # 获取需要保留的记录（最新的）
             keep_statement = select(ElectricityHistory).where(
                 ElectricityHistory.subscription_id == subscription_id
             ).order_by(ElectricityHistory.timestamp.desc()).limit(settings.HISTORY_LIMIT)

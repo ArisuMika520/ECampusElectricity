@@ -1,13 +1,9 @@
-"""FastAPI 应用入口"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.database import init_db, engine
-from sqlmodel import SQLModel
-
-from app.models import user, subscription, history, config, log
+from app.database import init_db
+from app.models import user, subscription, history, config, log, user_subscription
 from app.api import auth, subscriptions, history as history_api, config as config_api, logs, websocket, admin
-from app.utils.scheduler import start_scheduler
 from app.utils.logging import setup_logging
 
 app = FastAPI(
@@ -35,27 +31,16 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.on_event("startup")
 async def startup_event():
-    """应用启动时初始化数据库和定时任务"""
     init_db()
-    start_scheduler()
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """应用关闭时清理资源"""
-    from app.utils.scheduler import stop_scheduler
-    stop_scheduler()
 
 
 @app.get("/")
 async def root():
-    """根端点"""
     return {"message": "ECampus Electricity Monitor API", "version": "1.0.0"}
 
 
 @app.get("/health")
 async def health():
-    """健康检查端点"""
     return {"status": "healthy"}
 
 

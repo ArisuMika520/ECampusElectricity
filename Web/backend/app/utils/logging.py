@@ -2,9 +2,9 @@
 import logging
 import sys
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.models.log import Log
-from sqlmodel import Session
+from sqlmodel import Session, select
 from app.database import engine
 
 
@@ -18,11 +18,12 @@ class DatabaseLogHandler(logging.Handler):
     def emit(self, record: logging.LogRecord):
         """将日志记录写入数据库"""
         try:
+            from app.utils.timezone import now_naive
             log_entry = Log(
                 level=record.levelname,
                 message=self.format(record),
                 module=record.module if hasattr(record, 'module') else None,
-                timestamp=datetime.utcnow()
+                timestamp=now_naive()
             )
             if self.session:
                 self.session.add(log_entry)
@@ -31,6 +32,14 @@ class DatabaseLogHandler(logging.Handler):
                 with Session(engine) as session:
                     session.add(log_entry)
                     session.commit()
+                    # 保留最近 30 天日志，避免无限增长
+                    cutoff = datetime.utcnow() - timedelta(days=30)
+                    stmt = select(Log).where(Log.timestamp < cutoff)
+                    old_logs = session.exec(stmt).all()
+                    for l in old_logs:
+                        session.delete(l)
+                    if old_logs:
+                        session.commit()
         except Exception:
             pass
 
@@ -54,11 +63,12 @@ class WebSocketLogHandler(logging.Handler):
     def emit(self, record: logging.LogRecord):
         """向所有 WebSocket 连接发送日志记录"""
         try:
+            from app.utils.timezone import now_naive
             message = {
                 "level": record.levelname,
                 "message": self.format(record),
                 "module": record.module if hasattr(record, 'module') else None,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": now_naive().isoformat()
             }
             
             disconnected = []
@@ -112,4 +122,3 @@ def setup_logging(log_level: str = "INFO", log_file: Optional[str] = None):
     root_logger.addHandler(websocket_log_handler)
     
     return root_logger
-
