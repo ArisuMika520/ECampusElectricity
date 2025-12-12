@@ -9,16 +9,24 @@ import os
 import asyncio
 import uuid
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any, cast
 
-bot_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Bot'))
-sys.path.insert(0, bot_path)
-from src.core import Buildings
-from src.bot.bot_command import ElectricityMonitor
-from botpy.ext.cog_yaml import read
+# Ensure local packages are importable when running as a standalone script
+BASE_DIR = Path(__file__).resolve().parent.parent
+BOT_SRC_PATH = BASE_DIR / "Bot" / "src"
+WEB_BACKEND_PATH = BASE_DIR / "Web" / "backend"
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Web', 'backend')))
+for path in (BOT_SRC_PATH, WEB_BACKEND_PATH):
+    path_str = str(path)
+    if path_str not in sys.path:
+        sys.path.insert(0, path_str)
+
+from core import Buildings
+from bot.bot_command import ElectricityMonitor
+from botpy.ext.cog_yaml import read  # type: ignore
+
 from sqlmodel import Session, select, func
+from sqlalchemy import desc, bindparam
 from app.database import engine
 from app.models.subscription import Subscription
 from app.models.history import ElectricityHistory
@@ -37,7 +45,7 @@ pylog.basicConfig(
 # --- 配置 ---
 
 # 读取Bot配置文件
-config = read(os.path.join(os.path.dirname(__file__), '..', 'Bot', 'config.yaml'))
+config = read(os.path.join(BASE_DIR, 'Bot', 'config.yaml'))
 # 每次轮询之间的等待时间（秒）
 WAIT_TIME = config.get("tracker", {}).get("check_interval", 3600)
 # 数据上限（从Web后端配置读取）
@@ -77,9 +85,10 @@ def elect_require(target_name: str) -> float:
 
 def get_latest_history(session: Session, subscription_id: uuid.UUID) -> Optional[ElectricityHistory]:
     """获取订阅的最新历史记录"""
+    timestamp_col = cast(Any, ElectricityHistory.timestamp)
     statement = select(ElectricityHistory).where(
         ElectricityHistory.subscription_id == subscription_id
-    ).order_by(ElectricityHistory.timestamp.desc()).limit(1)
+    ).order_by(desc(timestamp_col)).limit(1)
     
     return session.exec(statement).first()
 
@@ -104,24 +113,33 @@ def should_add_history(session: Session, subscription_id: uuid.UUID, new_value: 
     return True
 
 
-def cleanup_old_history(session: Session, subscription_id: uuid.UUID):
+def cleanup_old_history(session: Session, subscription_id: Optional[uuid.UUID]):
     """清理超出限制的旧历史记录"""
-    count_statement = select(func.count(ElectricityHistory.id)).where(
-        ElectricityHistory.subscription_id == subscription_id
+    if subscription_id is None:
+        return
+    sub_id: uuid.UUID = subscription_id
+    sub_expr = bindparam("subscription_id", value=sub_id)
+    id_col = cast(Any, ElectricityHistory.id)
+    count_statement = select(func.count(id_col)).where(
+        ElectricityHistory.subscription_id == sub_expr
     )
     count = session.exec(count_statement).first()
     
     if count and count > HIS_LIMIT:
         # 获取需要保留的记录（最新的）
-        keep_statement = select(ElectricityHistory).where(
-            ElectricityHistory.subscription_id == subscription_id
-        ).order_by(ElectricityHistory.timestamp.desc()).limit(HIS_LIMIT)
+        timestamp_col = cast(Any, ElectricityHistory.timestamp)
+        keep_statement = cast(
+            Any,
+            select(ElectricityHistory).where(
+                ElectricityHistory.subscription_id == sub_expr
+            ).order_by(desc(timestamp_col)).limit(HIS_LIMIT),
+        )
         
         keep_records = list(session.exec(keep_statement).all())
         keep_ids = {r.id for r in keep_records}
         
         all_statement = select(ElectricityHistory).where(
-            ElectricityHistory.subscription_id == subscription_id
+            ElectricityHistory.subscription_id == sub_expr
         )
         all_records = list(session.exec(all_statement).all())
         
@@ -163,6 +181,11 @@ async def main():
                 # 对每个订阅进行查询并更新数据
                 for subscription in subscriptions:
                     try:
+                        if subscription.id is None:
+                            pylog.warning(f"订阅 {subscription.room_name} 缺少 ID，已跳过。")
+                            continue
+                        sub_id: uuid.UUID = cast(uuid.UUID, subscription.id)
+
                         # 执行查询
                         new_value = elect_require(subscription.room_name)
                         
@@ -170,24 +193,24 @@ async def main():
                         record_time = datetime.datetime.utcnow()
                         
                         # 判断是否需要添加历史记录
-                        if should_add_history(session, subscription.id, new_value):
+                        if should_add_history(session, sub_id, new_value):
                             # 创建历史记录
                             history = ElectricityHistory(
-                                subscription_id=subscription.id,
+                                subscription_id=sub_id,
                                 surplus=new_value,
                                 timestamp=record_time
                             )
                             session.add(history)
                             session.commit()
-                            pylog.info(f"房间 {subscription.room_name} (ID: {subscription.id}) 得到新数据，值: {new_value}, 时间: {record_time.strftime(TIME_FORMAT)}")
+                            pylog.info(f"房间 {subscription.room_name} (ID: {sub_id}) 得到新数据，值: {new_value}, 时间: {record_time.strftime(TIME_FORMAT)}")
                         else:
-                            pylog.info(f"房间 {subscription.room_name} (ID: {subscription.id}) 数据未变化，跳过保存")
+                            pylog.info(f"房间 {subscription.room_name} (ID: {sub_id}) 数据未变化，跳过保存")
                         
                         # 清理旧的历史记录
-                        cleanup_old_history(session, subscription.id)
+                        cleanup_old_history(session, sub_id)
                         
                     except Exception as e:
-                        pylog.error(f"处理房间 '{subscription.room_name}' (ID: {subscription.id}) 时发生错误，已跳过。错误详情: {e}")
+                        pylog.error(f"处理房间 '{subscription.room_name}' (ID: {getattr(subscription, 'id', None)}) 时发生错误，已跳过。错误详情: {e}")
                         continue
                 
                 pylog.info(f"所有订阅房间已查询完毕，数据已写入数据库。")

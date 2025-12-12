@@ -1,0 +1,17 @@
+{
+  "include": [
+    "**/*.py"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/.venv",
+    "**/node_modules"
+  ],
+  "extraPaths": [
+    "Bot/src",
+    "Web/backend"
+  ],
+  "venvPath": ".",
+  "pythonVersion": "3.12"
+}
+
