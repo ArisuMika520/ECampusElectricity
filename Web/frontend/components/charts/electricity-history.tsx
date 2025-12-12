@@ -43,10 +43,28 @@ export function ElectricityHistoryChart({ data, height = 320 }: Props) {
     }
   }, [theme])
 
-  const formatted = (data || []).map((d) => ({
-    time: new Date(d.timestamp).toLocaleString("zh-CN"),
-    surplus: d.surplus,
-  }))
+  // 如果没有数据，创建一个默认的0值数据点
+  let formatted: Array<{ time: string; surplus: number }> = [];
+  
+  if (!data || data.length === 0) {
+    // 如果没有历史记录，统一显示为0
+    const now = new Date();
+    formatted = [
+      {
+        time: new Date(now.getTime() - 48 * 60 * 60 * 1000).toLocaleString("zh-CN"),
+        surplus: 0,
+      },
+      {
+        time: now.toLocaleString("zh-CN"),
+        surplus: 0,
+      },
+    ];
+  } else {
+    formatted = data.map((d) => ({
+      time: new Date(d.timestamp).toLocaleString("zh-CN"),
+      surplus: d.surplus,
+    }));
+  }
   
   const tooltipStyle = {
     backgroundColor: isDark ? 'oklch(0.205 0 0)' : 'oklch(1 0 0)',

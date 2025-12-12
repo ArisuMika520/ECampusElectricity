@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { RefreshCw, Zap, TrendingUp } from 'lucide-react';
+import { RefreshCw, Zap, TrendingUp, Calendar } from 'lucide-react';
 import Navbar from '@/components/layout/navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ElectricityHistoryChart } from '@/components/charts/electricity-history';
@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Modal, ModalContent, ModalFooter } from '@/components/ui/modal';
 import { PageTransition } from '@/components/ui/page-transition';
 import { CardAnimated } from '@/components/ui/card-animated';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 
@@ -19,6 +22,8 @@ interface HistoryRecord {
   surplus: number;
   timestamp: string;
 }
+
+type TimeRange = 'today' | '24h' | '48h' | '72h' | 'week' | 'month' | 'custom';
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -30,6 +35,9 @@ export default function HistoryPage() {
   const [querying, setQuerying] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{ title: string; message: string; type: 'success' | 'error' } | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>('48h'); // 默认48小时
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -47,7 +55,59 @@ export default function HistoryPage() {
     };
     
     checkAuth();
-  }, [subscriptionId]);
+  }, [subscriptionId, timeRange, customStartDate, customEndDate]);
+
+  const getTimeRangeParams = () => {
+    const now = new Date();
+    let startTime: Date | null = null;
+    let endTime: Date | null = null;
+
+    switch (timeRange) {
+      case 'today':
+        startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        endTime = now;
+        break;
+      case '24h':
+        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case '48h':
+        startTime = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case '72h':
+        startTime = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case 'week':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case 'month':
+        startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case 'custom':
+        if (customStartDate) {
+          startTime = new Date(customStartDate);
+          startTime.setHours(0, 0, 0, 0);
+        }
+        if (customEndDate) {
+          endTime = new Date(customEndDate);
+          endTime.setHours(23, 59, 59, 999);
+        }
+        break;
+    }
+
+    const params: Record<string, string> = {};
+    if (startTime) {
+      params.start_time = startTime.toISOString();
+    }
+    if (endTime) {
+      params.end_time = endTime.toISOString();
+    }
+    return params;
+  };
 
   const fetchHistory = async () => {
     try {
@@ -63,7 +123,14 @@ export default function HistoryPage() {
         console.warn('Failed to fetch subscription info:', e);
       }
       
-      const response = await api.get(`/api/history/subscriptions/${subscriptionId}`);
+      const timeParams = getTimeRangeParams();
+      const response = await api.get(`/api/history/subscriptions/${subscriptionId}`, {
+        params: {
+          limit: 1000,
+          ...timeParams
+        }
+      });
+      
       if (response.data && Array.isArray(response.data)) {
         setHistory(response.data.reverse());
       } else {
@@ -180,11 +247,55 @@ export default function HistoryPage() {
           <CardAnimated delay={0.1}>
             <Card className="transition-all hover:shadow-lg">
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <CardTitle>电费余额趋势</CardTitle>
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      <CardTitle>电费余额趋势</CardTitle>
+                    </div>
+                    <CardDescription>历史电费余额变化图表</CardDescription>
+                  </div>
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                    <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
+                      <SelectTrigger className="w-full md:w-[180px]">
+                        <SelectValue placeholder="选择时间范围" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="today">今天</SelectItem>
+                        <SelectItem value="24h">24小时</SelectItem>
+                        <SelectItem value="48h">48小时</SelectItem>
+                        <SelectItem value="72h">72小时</SelectItem>
+                        <SelectItem value="week">一周</SelectItem>
+                        <SelectItem value="month">一个月</SelectItem>
+                        <SelectItem value="custom">自定义</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {timeRange === 'custom' && (
+                      <div className="flex gap-2 items-center">
+                        <div className="flex flex-col gap-1">
+                          <Label htmlFor="start-date" className="text-xs">开始日期</Label>
+                          <Input
+                            id="start-date"
+                            type="date"
+                            value={customStartDate}
+                            onChange={(e) => setCustomStartDate(e.target.value)}
+                            className="w-full md:w-[150px]"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Label htmlFor="end-date" className="text-xs">结束日期</Label>
+                          <Input
+                            id="end-date"
+                            type="date"
+                            value={customEndDate}
+                            onChange={(e) => setCustomEndDate(e.target.value)}
+                            className="w-full md:w-[150px]"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <CardDescription>历史电费余额变化图表</CardDescription>
               </CardHeader>
               <CardContent>
                 {history.length === 0 ? (
@@ -218,7 +329,7 @@ export default function HistoryPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <ElectricityHistoryChart data={history} height={400} />
+                    <ElectricityHistoryChart data={history.length > 0 ? history : []} height={400} />
                   </motion.div>
                 )}
               </CardContent>
