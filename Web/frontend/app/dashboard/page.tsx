@@ -15,6 +15,8 @@ import { ElectricityHistoryChart } from '@/components/charts/electricity-history
 import api from '@/lib/api';
 import { isAuthenticated } from '@/lib/auth';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Subscription {
   id: string;
@@ -26,6 +28,8 @@ interface Subscription {
   email_recipient_count?: number | null;
 }
 
+type TimeRange = 'today' | '24h' | '48h' | '72h' | 'week' | 'month' | 'custom';
+
 export default function DashboardPage() {
   const router = useRouter();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -33,6 +37,9 @@ export default function DashboardPage() {
   const [primarySubscriptionId, setPrimarySubscriptionId] = useState<string | null>(null);
   const [history, setHistory] = useState<{ timestamp: string; surplus: number }[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [timeRange, setTimeRange] = useState<TimeRange>('48h'); // 默认48小时
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -51,6 +58,13 @@ export default function DashboardPage() {
     
     checkAuth();
   }, []);
+
+  // 当时间范围或自定义日期改变时，如果已选择首要房间，自动刷新历史数据
+  useEffect(() => {
+    if (primarySubscriptionId && !loading) {
+      fetchHistory(primarySubscriptionId);
+    }
+  }, [timeRange, customStartDate, customEndDate]);
 
   const fetchSubscriptions = async () => {
     try {
@@ -75,10 +89,68 @@ export default function DashboardPage() {
     }
   };
 
+  const getTimeRangeParams = () => {
+    const now = new Date();
+    let startTime: Date | null = null;
+    let endTime: Date | null = null;
+
+    switch (timeRange) {
+      case 'today':
+        startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        endTime = now;
+        break;
+      case '24h':
+        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case '48h':
+        startTime = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case '72h':
+        startTime = new Date(now.getTime() - 72 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case 'week':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case 'month':
+        startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        endTime = now;
+        break;
+      case 'custom':
+        if (customStartDate) {
+          startTime = new Date(customStartDate);
+          startTime.setHours(0, 0, 0, 0);
+        }
+        if (customEndDate) {
+          endTime = new Date(customEndDate);
+          endTime.setHours(23, 59, 59, 999);
+        }
+        break;
+    }
+
+    const params: Record<string, string> = {};
+    if (startTime) {
+      params.start_time = startTime.toISOString();
+    }
+    if (endTime) {
+      params.end_time = endTime.toISOString();
+    }
+    return params;
+  };
+
   const fetchHistory = async (subscriptionId: string) => {
     try {
       setRefreshing(true);
-      const resp = await api.get(`/api/history/subscriptions/${subscriptionId}`);
+      const timeParams = getTimeRangeParams();
+      const resp = await api.get(`/api/history/subscriptions/${subscriptionId}`, {
+        params: {
+          limit: 1000,
+          ...timeParams
+        }
+      });
       const data = resp.data || [];
       setHistory(Array.isArray(data) ? data.slice().reverse() : []);
     } catch (error) {
@@ -176,7 +248,7 @@ export default function DashboardPage() {
           >
             <Card className="transition-all hover:shadow-lg">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Zap className="h-5 w-5" />
@@ -187,50 +259,110 @@ export default function DashboardPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">首要房间</span>
-                    <Select
-                      value={primarySubscriptionId || ''}
-                      onValueChange={(id) => {
-                        setPrimarySubscriptionId(id);
-                        if (typeof window !== 'undefined') {
-                          localStorage.setItem('primary_subscription_id', id);
-                        }
-                        if (id) fetchHistory(id);
-                      }}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="选择房间" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subscriptions.map((sub) => (
-                          <SelectItem key={sub.id} value={sub.id}>
-                            {sub.room_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                <div className="mb-4 flex flex-col gap-4">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-muted-foreground">首要房间</span>
+                      <Select
+                        value={primarySubscriptionId || ''}
+                        onValueChange={(id) => {
+                          setPrimarySubscriptionId(id);
+                          if (typeof window !== 'undefined') {
+                            localStorage.setItem('primary_subscription_id', id);
+                          }
+                          if (id) fetchHistory(id);
+                        }}
+                      >
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder="选择房间" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {subscriptions.map((sub) => (
+                            <SelectItem key={sub.id} value={sub.id}>
+                              {sub.room_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm font-medium text-muted-foreground">时间范围</span>
+                        <Select value={timeRange} onValueChange={(value) => {
+                          setTimeRange(value as TimeRange);
+                          if (primarySubscriptionId) {
+                            fetchHistory(primarySubscriptionId);
+                          }
+                        }}>
+                          <SelectTrigger className="w-full md:w-[180px]">
+                            <SelectValue placeholder="选择时间范围" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="today">今天</SelectItem>
+                            <SelectItem value="24h">24小时</SelectItem>
+                            <SelectItem value="48h">48小时</SelectItem>
+                            <SelectItem value="72h">72小时</SelectItem>
+                            <SelectItem value="week">一周</SelectItem>
+                            <SelectItem value="month">一个月</SelectItem>
+                            <SelectItem value="custom">自定义</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {timeRange === 'custom' && (
+                        <div className="flex gap-2 items-end">
+                          <div className="flex flex-col gap-1">
+                            <Label htmlFor="dashboard-start-date" className="text-xs">开始日期</Label>
+                            <Input
+                              id="dashboard-start-date"
+                              type="date"
+                              value={customStartDate}
+                              onChange={(e) => {
+                                setCustomStartDate(e.target.value);
+                                if (primarySubscriptionId) {
+                                  fetchHistory(primarySubscriptionId);
+                                }
+                              }}
+                              className="w-full md:w-[150px]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <Label htmlFor="dashboard-end-date" className="text-xs">结束日期</Label>
+                            <Input
+                              id="dashboard-end-date"
+                              type="date"
+                              value={customEndDate}
+                              onChange={(e) => {
+                                setCustomEndDate(e.target.value);
+                                if (primarySubscriptionId) {
+                                  fetchHistory(primarySubscriptionId);
+                                }
+                              }}
+                              className="w-full md:w-[150px]"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => primarySubscriptionId && fetchHistory(primarySubscriptionId)}
+                        disabled={!primarySubscriptionId || refreshing}
+                        className="transition-all hover:scale-105"
+                      >
+                        {refreshing ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            刷新中...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            刷新历史
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => primarySubscriptionId && fetchHistory(primarySubscriptionId)}
-                    disabled={!primarySubscriptionId || refreshing}
-                    className="transition-all hover:scale-105"
-                  >
-                    {refreshing ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        刷新中...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        刷新历史
-                      </>
-                    )}
-                  </Button>
                 </div>
                 {history.length === 0 ? (
                   <motion.div
@@ -247,7 +379,7 @@ export default function DashboardPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <ElectricityHistoryChart data={history} height={320} />
+                    <ElectricityHistoryChart data={history.length > 0 ? history : []} height={320} />
                   </motion.div>
                 )}
               </CardContent>
