@@ -5,6 +5,7 @@ import os
 import re
 import smtplib
 import time
+import warnings
 from email.header import Header
 from email.mime.text import MIMEText
 from email.utils import formataddr
@@ -12,6 +13,12 @@ from threading import RLock
 from typing import Any, Dict, List, Optional
 
 import requests
+import urllib3
+
+# 禁用urllib3的InsecureRequestWarning警告
+# 因为xiaofubao.com的API服务器可能没有有效的SSL证书，我们需要禁用SSL验证
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 from app.core.buildings import get_building_index
 

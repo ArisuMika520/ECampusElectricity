@@ -8,11 +8,18 @@ import sys
 import os
 import asyncio
 import uuid
+import warnings
 from pathlib import Path
 from typing import Optional, Any, cast, Dict, List, Tuple
 from zoneinfo import ZoneInfo
 from dataclasses import dataclass, field
 from enum import Enum
+
+# 禁用urllib3的InsecureRequestWarning警告
+# 因为xiaofubao.com的API服务器可能没有有效的SSL证书，我们需要禁用SSL验证
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+warnings.filterwarnings('ignore', message='Unverified HTTPS request')
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_BACKEND_PATH = BASE_DIR / "Web" / "backend"
