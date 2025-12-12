@@ -38,7 +38,7 @@ cd ..
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}启动服务...${NC}"
 echo -e "${GREEN}后端: http://localhost:8000${NC}"
-echo -e "${GREEN}前端: http://localhost:3000${NC}"
+echo -e "${GREEN}前端: http://localhost:4000${NC}"
 echo -e "${GREEN}API 文档: http://localhost:8000/docs${NC}"
 echo -e "${GREEN}按 Ctrl+C 停止所有服务${NC}"
 echo -e "${GREEN}========================================${NC}"

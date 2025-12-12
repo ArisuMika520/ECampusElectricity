@@ -147,7 +147,7 @@ echo -e "  ${GREEN}npm run start${NC}      # 生产模式（需要先构建前�
 echo -e "  ${GREEN}./scripts/manage.sh dev${NC}    # 使用脚本管理工具启动开发模式"
 echo -e "  ${GREEN}./scripts/manage.sh start${NC}  # 使用脚本管理工具启动生产模式"
 echo -e "\n${BLUE}访问地址:${NC}"
-echo -e "  前端: ${GREEN}http://localhost:3000${NC}"
+echo -e "  前端: ${GREEN}http://localhost:4000${NC}"
 echo -e "  后端 API: ${GREEN}http://localhost:8000${NC}"
 echo -e "  API 文档: ${GREEN}http://localhost:8000/docs${NC}"
 echo ""

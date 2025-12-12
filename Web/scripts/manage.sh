@@ -157,7 +157,7 @@ setup_all() {
     echo -e "  ${CYAN}./scripts/manage.sh dev${NC}      # 启动开发模式（前后端同时启动，支持热重载）"
     echo -e "  ${CYAN}./scripts/manage.sh start${NC}    # 启动生产模式（需要先构建前端）"
     echo -e "\n${GREEN}访问地址:${NC}"
-    echo -e "  前端: ${CYAN}http://localhost:3000${NC}"
+    echo -e "  前端: ${CYAN}http://localhost:4000${NC}"
     echo -e "  后端 API: ${CYAN}http://localhost:8000${NC}"
     echo -e "  API 文档: ${CYAN}http://localhost:8000/docs${NC}"
 }
@@ -194,7 +194,7 @@ start_dev() {
     
     echo -e "\n${GREEN}启动服务...${NC}"
     echo -e "${CYAN}后端:${NC} http://localhost:8000"
-    echo -e "${CYAN}前端:${NC} http://localhost:3000"
+    echo -e "${CYAN}前端:${NC} http://localhost:4000"
     echo -e "${CYAN}API 文档:${NC} http://localhost:8000/docs"
     echo -e "${CYAN}日志输出:${NC} $BACKEND_LOG (后端), $FRONTEND_LOG (前端)"
     echo -e "\n${YELLOW}按 Ctrl+C 停止所有服务${NC}\n"
