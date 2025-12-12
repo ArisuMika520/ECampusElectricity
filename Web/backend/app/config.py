@@ -13,7 +13,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    CORS_ORIGINS: Union[str, List[str]] = ["http://localhost:4000", "http://localhost:3001", "http://127.0.0.1:4000"]
+    CORS_ORIGINS: Union[str, List[str]] = [
+        "http://localhost:4000", 
+        "http://localhost:3001", 
+        "http://127.0.0.1:4000"
+    ]
     
     def get_cors_origins(self) -> List[str]:
         """解析 CORS_ORIGINS（支持 JSON 字符串或列表）"""
