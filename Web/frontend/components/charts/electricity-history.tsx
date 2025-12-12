@@ -65,6 +65,36 @@ export function ElectricityHistoryChart({ data, height = 320 }: Props) {
       surplus: d.surplus,
     }));
   }
+
+  // 计算Y轴范围
+  const calculateYAxisDomain = () => {
+    if (formatted.length === 0) {
+      return [0, 10]; // 默认范围
+    }
+
+    const values = formatted.map(d => d.surplus);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    // range = max - min
+    let range = max - min;
+    
+    // range = max(range, 10) - 确保最小范围为10
+    range = Math.max(range, 10);
+    
+    // low = min - range * 1.1
+    let low = min - range * 1.1;
+    
+    // low = max(0, low) - 下界不能小于0
+    low = Math.max(0, low);
+    
+    // 上界也留一些空间，通常在上方留10%的空间
+    const high = max + range * 0.1;
+
+    return [low, high];
+  };
+
+  const yAxisDomain = calculateYAxisDomain();
   
   const tooltipStyle = {
     backgroundColor: isDark ? 'oklch(0.205 0 0)' : 'oklch(1 0 0)',
@@ -94,7 +124,7 @@ export function ElectricityHistoryChart({ data, height = 320 }: Props) {
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
           <XAxis dataKey="time" minTickGap={20} tick={tickStyle} />
-          <YAxis tick={tickStyle} />
+          <YAxis tick={tickStyle} domain={yAxisDomain} />
           <Tooltip 
             contentStyle={tooltipStyle} 
             wrapperStyle={tooltipStyle}
