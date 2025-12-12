@@ -7,7 +7,7 @@ from app.models.user import User
 from app.models.log import Log
 from app.schemas.log import LogResponse
 from app.dependencies import get_current_user
-from app.utils.timezone import to_shanghai_naive
+from app.utils.timezone import to_shanghai_naive, now_naive
 
 router = APIRouter()
 
@@ -40,7 +40,7 @@ async def get_logs(
     logs = list(session.exec(statement).all())
     result = []
     for log in logs:
-        timestamp = log.timestamp if log.timestamp else datetime.utcnow()
+        timestamp = log.timestamp if log.timestamp else now_naive()
         log_dict = {
             "id": log.id,
             "level": log.level,

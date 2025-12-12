@@ -9,7 +9,7 @@ from app.models.history import ElectricityHistory
 from app.schemas.history import ElectricityHistoryResponse, HistoryStatsResponse
 from app.services.subscription import SubscriptionService
 from app.dependencies import get_current_user
-from app.utils.timezone import to_shanghai_naive
+from app.utils.timezone import to_shanghai_naive, now_naive
 
 router = APIRouter()
 
@@ -90,7 +90,7 @@ async def get_history_stats(
         subscription_id=subscription_id,
         total_records=result[0] or 0,
         latest_surplus=latest.surplus if latest else 0.0,
-        latest_timestamp=to_shanghai_naive(latest.timestamp) if latest else to_shanghai_naive(datetime.utcnow()),
+        latest_timestamp=to_shanghai_naive(latest.timestamp) if latest else now_naive(),
         min_surplus=float(result[2] or 0.0),
         max_surplus=float(result[1] or 0.0),
         avg_surplus=float(result[3] or 0.0)

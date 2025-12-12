@@ -19,10 +19,13 @@ def now_naive() -> datetime:
 def to_shanghai_naive(dt: datetime | None) -> datetime | None:
     """
     将给定时间转换为上海时区的 naive 时间。
-    - 支持 tz-aware 和 naive（默认按 UTC 解释）输入
+    - 如果输入是 tz-aware 时间，转换为上海时间
+    - 如果输入是 naive 时间，假设它已经是上海时间（数据库中存储的都是上海时间），直接返回
     """
     if dt is None:
         return None
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        # 数据库中存储的时间已经是上海时间的 naive 版本，直接返回
+        return dt
+    # 如果是 tz-aware 时间，转换为上海时间
     return dt.astimezone(SHANGHAI_TZ).replace(tzinfo=None)

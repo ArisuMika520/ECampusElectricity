@@ -7,6 +7,7 @@ from app.models.user_subscription import UserSubscription
 from app.services.electricity import ElectricityService
 from app.services.alert import AlertService
 from app.config import settings
+from app.utils.timezone import now_naive
 import logging
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ class TrackerService:
             history = ElectricityHistory(
                 subscription_id=subscription.id,
                 surplus=surplus,
-                timestamp=datetime.utcnow()
+                timestamp=now_naive()  # 使用上海时间
             )
             self.session.add(history)
             self.session.commit()
@@ -86,7 +87,8 @@ class TrackerService:
             return True
         
         if latest.surplus == surplus:
-            time_diff = datetime.utcnow() - latest.timestamp
+            current_time = now_naive()  # 使用上海时间
+            time_diff = current_time - latest.timestamp
             if time_diff < timedelta(hours=2):
                 return False
         

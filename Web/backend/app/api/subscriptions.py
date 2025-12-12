@@ -12,7 +12,7 @@ from app.services.electricity import ElectricityService
 from app.dependencies import get_current_user
 from app.models.user_subscription import UserSubscription
 from app.models.history import ElectricityHistory
-from app.utils.timezone import to_shanghai_naive
+from app.utils.timezone import to_shanghai_naive, now_naive
 from app.utils.room_parser import RoomParseError
 from app.config import settings
 
@@ -191,7 +191,7 @@ async def query_subscription(
         )
 
     surplus = float(room_info["data"]["surplus"])
-    timestamp = to_shanghai_naive(datetime.utcnow())
+    timestamp = now_naive()  # 使用上海时间
 
     latest_stmt = (
         select(ElectricityHistory)
