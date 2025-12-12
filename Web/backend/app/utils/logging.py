@@ -33,13 +33,9 @@ class DatabaseLogHandler(logging.Handler):
                     session.add(log_entry)
                     session.commit()
                     # 保留最近 30 天日志，避免无限增长
-                    cutoff = datetime.utcnow() - timedelta(days=30)
-                    stmt = select(Log).where(Log.timestamp < cutoff)
-                    old_logs = session.exec(stmt).all()
-                    for l in old_logs:
-                        session.delete(l)
-                    if old_logs:
-                        session.commit()
+                    # 注意：这里每次写入都会清理，可能影响性能，改为批量清理
+                    # 实际清理逻辑在PM2日志监控器中也会执行
+                    pass
         except Exception:
             pass
 

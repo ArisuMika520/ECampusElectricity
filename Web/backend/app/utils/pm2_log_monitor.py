@@ -1,12 +1,15 @@
-"""PM2日志监控器：读取PM2日志文件并推送到WebSocket"""
+"""PM2日志监控器：读取PM2日志文件并推送到WebSocket和数据库"""
 import asyncio
 import os
 from pathlib import Path
 from typing import Dict, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from app.utils.logging import websocket_log_handler
 from app.utils.timezone import now_naive
+from app.models.log import Log
+from app.database import engine
+from sqlmodel import Session, select
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +40,8 @@ class PM2LogMonitor:
         self.file_positions: Dict[str, int] = {}
         self.running = False
         self.monitor_task: Optional[asyncio.Task] = None
+        self.cleanup_task: Optional[asyncio.Task] = None
+        self.last_cleanup_time: Optional[datetime] = None
     
     def parse_pm2_log_line(self, line: str, source: str) -> Optional[dict]:
         """
@@ -160,8 +165,80 @@ class PM2LogMonitor:
                                 websocket_log_handler.remove_connection(conn)
                         except Exception as e:
                             logger.debug(f"Failed to send PM2 log to WebSocket: {e}")
+                        
+                        # 写入数据库（用于历史日志查询）
+                        try:
+                            self.save_to_database(log_entry)
+                        except Exception as e:
+                            logger.debug(f"Failed to save PM2 log to database: {e}")
         except Exception as e:
             logger.debug(f"Failed to read PM2 log file {file_path}: {e}")
+    
+    def save_to_database(self, log_entry: dict):
+        """将PM2日志保存到数据库"""
+        try:
+            timestamp_str = log_entry.get("timestamp")
+            if isinstance(timestamp_str, str):
+                try:
+                    # 处理ISO格式时间戳
+                    if 'T' in timestamp_str:
+                        timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+                    else:
+                        timestamp = datetime.fromisoformat(timestamp_str)
+                except:
+                    timestamp = now_naive()
+            else:
+                timestamp = now_naive()
+            
+            log_db = Log(
+                level=log_entry["level"],
+                message=log_entry["message"],
+                module=log_entry["module"],
+                timestamp=timestamp
+            )
+            
+            with Session(engine) as session:
+                session.add(log_db)
+                session.commit()
+        except Exception as e:
+            logger.debug(f"Failed to save PM2 log to database: {e}")
+    
+    def cleanup_old_logs(self, session: Session):
+        """清理超过30天的旧日志（批量清理，避免频繁操作）"""
+        try:
+            # 每小时清理一次
+            now = datetime.utcnow()
+            if self.last_cleanup_time and (now - self.last_cleanup_time).total_seconds() < 3600:
+                return
+            
+            cutoff = now - timedelta(days=30)
+            stmt = select(Log).where(Log.timestamp < cutoff)
+            old_logs = list(session.exec(stmt).all())
+            if old_logs:
+                for log_entry in old_logs:
+                    session.delete(log_entry)
+                session.commit()
+                self.last_cleanup_time = now
+                logger.info(f"Cleaned up {len(old_logs)} old log entries (older than 30 days)")
+        except Exception as e:
+            logger.debug(f"Failed to cleanup old logs: {e}")
+    
+    async def cleanup_loop(self):
+        """定期清理旧日志的后台任务"""
+        while self.running:
+            try:
+                await asyncio.sleep(3600)  # 每小时执行一次
+                if self.running:
+                    try:
+                        with Session(engine) as session:
+                            self.cleanup_old_logs(session)
+                    except Exception as e:
+                        logger.error(f"Error in cleanup loop: {e}")
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in cleanup loop: {e}")
+                await asyncio.sleep(3600)
     
     async def monitor_loop(self):
         """监控循环"""
@@ -188,11 +265,15 @@ class PM2LogMonitor:
             logger.warning("PM2 log monitor is already running")
             return
         
-        # 检查日志目录是否存在
+        # 检查日志目录是否存在，如果不存在则创建
         if not PM2_LOG_DIR.exists():
-            logger.warning(f"PM2 log directory does not exist: {PM2_LOG_DIR}")
-            logger.info("PM2 log monitor will not start. Create the directory to enable PM2 log monitoring.")
-            return
+            try:
+                PM2_LOG_DIR.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Created PM2 log directory: {PM2_LOG_DIR}")
+            except Exception as e:
+                logger.warning(f"PM2 log directory does not exist and cannot be created: {PM2_LOG_DIR}, error: {e}")
+                logger.info("PM2 log monitor will not start. Create the directory to enable PM2 log monitoring.")
+                return
         
         self.running = True
         
@@ -200,23 +281,29 @@ class PM2LogMonitor:
         for service_name, log_files in PM2_LOG_FILES.items():
             for log_file in log_files:
                 file_path = PM2_LOG_DIR / log_file
+                file_key = str(file_path)
                 if file_path.exists():
-                    file_key = str(file_path)
                     try:
                         # 从文件末尾开始读取（只读取新日志）
                         self.file_positions[file_key] = file_path.stat().st_size
                     except Exception:
                         self.file_positions[file_key] = 0
+                else:
+                    # 文件不存在时，位置设为0，等待文件创建
+                    self.file_positions[file_key] = 0
+                    logger.debug(f"PM2 log file does not exist yet: {file_path}, will monitor for creation")
         
         # 启动监控任务（在当前的asyncio事件循环中）
         try:
             loop = asyncio.get_running_loop()
             self.monitor_task = loop.create_task(self.monitor_loop())
+            self.cleanup_task = loop.create_task(self.cleanup_loop())
         except RuntimeError:
             # 如果没有运行中的事件循环，创建一个新的
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             self.monitor_task = loop.create_task(self.monitor_loop())
+            self.cleanup_task = loop.create_task(self.cleanup_loop())
         
         logger.info("PM2 log monitor started successfully")
     
@@ -228,6 +315,8 @@ class PM2LogMonitor:
         self.running = False
         if self.monitor_task:
             self.monitor_task.cancel()
+        if self.cleanup_task:
+            self.cleanup_task.cancel()
         logger.info("PM2 log monitor stopped")
 
 

@@ -706,8 +706,16 @@ export default function LogsPage() {
         levelSymbol = '🔍';
       }
 
-      // 根据进程名称设置颜色
-      const process = log.process || '';
+      // 根据进程名称设置颜色（从module字段提取：pm2.{service_name}.{log_type}）
+      let process = log.process || '';
+      if (!process && log.module && log.module.startsWith('pm2.')) {
+        // 从module中提取：pm2.web-backend.log -> web-backend
+        const parts = log.module.split('.');
+        if (parts.length >= 2) {
+          process = parts[1]; // 提取service_name
+        }
+      }
+      
       let processColor = '\x1b[37m'; // 默认白色
       let processName = '';
       
