@@ -54,21 +54,43 @@ async function handleRequest(
 ) {
   try {
     // 构建后端 API 路径
-    const apiPath = pathSegments.join('/');
+    let apiPath = pathSegments.join('/');
+    
+    // 如果路径以 'api/' 开头，去掉它（因为前端代码中已经包含了 /api/ 前缀）
+    // 例如：/api/proxy/api/auth/login -> pathSegments = ['api', 'auth', 'login']
+    // 需要去掉开头的 'api'，变成 'auth/login'
+    if (apiPath.startsWith('api/')) {
+      apiPath = apiPath.substring(4);
+    } else if (pathSegments[0] === 'api' && pathSegments.length > 1) {
+      // 如果第一个段是 'api'，去掉它
+      apiPath = pathSegments.slice(1).join('/');
+    }
+    
     const url = new URL(request.url);
     const queryString = url.search;
     const backendUrl = `${BACKEND_URL}/api/${apiPath}${queryString}`;
+    
+    // 调试日志（生产环境可以移除）
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Proxy] ${method} ${request.url} -> ${backendUrl}`);
+    }
 
     // 获取请求头（排除一些不需要的头部）
     const headers: HeadersInit = {};
     request.headers.forEach((value, key) => {
       // 排除 host, connection 等头部
+      const lowerKey = key.toLowerCase();
       if (
-        !['host', 'connection', 'content-length'].includes(key.toLowerCase())
+        !['host', 'connection', 'content-length', 'referer'].includes(lowerKey)
       ) {
         headers[key] = value;
       }
     });
+    
+    // 确保 Content-Type 正确设置
+    if (!headers['Content-Type'] && method !== 'GET' && method !== 'HEAD') {
+      headers['Content-Type'] = 'application/json';
+    }
 
     // 获取请求体
     let body: BodyInit | undefined;
