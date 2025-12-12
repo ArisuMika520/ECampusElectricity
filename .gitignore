@@ -185,7 +185,6 @@ Bot/data_files/image_upload_records.json
 
 # Web 项目相关
 Web/backend/venv/
-Web/backend/.env
 Web/frontend/.next/
 Web/frontend/node_modules/
 Web/node_modules/

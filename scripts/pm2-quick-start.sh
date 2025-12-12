@@ -50,11 +50,12 @@ else
 fi
 
 # 检查配置文件
-if [ ! -f "Web/backend/.env" ]; then
-    echo -e "${YELLOW}⚠ Web 后端配置文件不存在${NC}"
+if [ ! -f ".env" ]; then
+    echo -e "${YELLOW}⚠ 配置文件不存在${NC}"
     echo -e "${YELLOW}请复制并配置:${NC}"
-    echo -e "  ${BLUE}cp Web/backend/.env.example Web/backend/.env${NC}"
-    echo -e "  ${BLUE}nano Web/backend/.env${NC}"
+    echo -e "  ${BLUE}cp .env.example .env${NC}"
+    echo -e "  ${BLUE}nano .env${NC}"
+    echo -e "  ${BLUE}# 或使用交互式配置: bash scripts/init-config.sh${NC}"
 fi
 
 # 创建日志目录

@@ -21,7 +21,7 @@
  * 
  * 注意事项:
  *   1. 首次运行前，确保已执行 npm run setup（Web 版本）
- *   2. 确保已配置 backend/.env 和 Bot/config.yaml
+ *   2. 确保已配置根目录 .env 文件（或使用 bash scripts/init-config.sh）
  *   3. 确保数据库已初始化（npm run db:init）
  *   4. Web 前端需要先构建（npm run build）
  */

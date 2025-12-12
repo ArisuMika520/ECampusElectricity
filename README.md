@@ -6,6 +6,12 @@
 
 > **愿景**: 让大学生们及时得知电费情况，避免断电导致的不良影响
 
+## 📖 文档导航
+
+- **[统一配置管理指南](CONFIG_MANAGEMENT.md)** - 配置文件管理和部署
+- **[PM2 部署文档](PM2_DEPLOYMENT.md)** - 生产环境部署
+- **[分支管理指南](BRANCH_GUIDE.md)** - 分支策略
+
 ## 出现的缘由
 闲来无事，周末寝室玩游戏，但是电费不足停电了，气死我了！
 遂写了一个电费自动告警程序
@@ -86,12 +92,34 @@
    - 按照上述步骤进行抓包
 
 3. **将 shiroJID 填入配置**:
-   - Web 版本：在 WebUI 的"设置"页面配置，或填入 `backend/.env` 文件
-   - Bot 版本：填入 `Bot/config.yaml` 文件
+   - 填入项目根目录的 `.env` 文件
+   - 或在 WebUI 的"设置"页面配置
+   - 详见 [统一配置管理指南](CONFIG_MANAGEMENT.md)
 
 ### Web 版本快速开始
 
-#### 方式一：一键设置（推荐）
+#### 方式一：统一配置（推荐）
+
+```bash
+# 1. 配置环境（项目根目录）
+cd /root/pro/ECampusElectricity
+bash scripts/init-config.sh  # 交互式配置
+# 或手动配置:
+cp .env.example .env
+nano .env  # 编辑配置文件
+
+# 2. 进入 Web 目录并安装依赖
+cd Web
+npm run setup
+
+# 3. 初始化数据库
+npm run db:init
+
+# 4. 启动开发模式
+npm run dev
+```
+
+#### 方式二：传统方式
 
 ```bash
 # 1. 进入 Web 目录
@@ -100,12 +128,11 @@ cd Web
 # 2. 一键设置环境（自动安装所有依赖）
 npm run setup
 
-# 3. 配置环境变量
-cp backend/.env.example backend/.env
-# 编辑 backend/.env，设置以下关键配置：
-#   - DATABASE_URL: PostgreSQL 数据库连接字符串
-#   - SECRET_KEY: JWT 密钥（随机字符串）
-#   - SHIRO_JID: 从易校园抓取的 shiroJID
+# 3. 配置环境变量（如果根目录没有 .env）
+# 注意: 建议使用根目录的统一配置
+cd backend
+cp ../../.env.example ../../.env
+nano ../../.env  # 编辑配置
 
 # 4. 初始化数据库
 npm run db:init

@@ -31,18 +31,20 @@ pm2 --version
 确保已完成以下步骤：
 
 ```bash
-# Web 版本环境设置
+# 1. 配置统一环境变量（项目根目录）
+bash scripts/init-config.sh  # 交互式配置
+# 或手动配置:
+cp .env.example .env
+nano .env  # 编辑配置，设置数据库连接、JWT密钥、SHIRO_JID等
+
+# 2. Web 版本环境设置
 cd Web
 npm run setup
 
-# 配置环境变量
-cp backend/.env.example backend/.env
-# 编辑 backend/.env，设置数据库连接等
-
-# 初始化数据库
+# 3. 初始化数据库
 npm run db:init
 
-# 构建前端（生产模式需要）
+# 4. 构建前端（生产模式需要）
 cd frontend
 npm run build
 cd ../..
