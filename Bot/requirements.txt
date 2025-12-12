@@ -1,5 +1,5 @@
 # QQ 机器人框架
-botpy>=1.0.0
+qq-botpy
 
 # HTTP 请求
 requests>=2.31.0

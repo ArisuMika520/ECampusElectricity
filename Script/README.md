@@ -56,3 +56,5 @@ python elect_tracker_db.py
 2. 确保数据库连接正常，否则脚本会报错并重试
 3. 脚本会持续运行，使用 `Ctrl+C` 可以中断
 
+
+

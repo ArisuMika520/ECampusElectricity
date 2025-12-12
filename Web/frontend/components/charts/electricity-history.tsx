@@ -36,3 +36,5 @@ export function ElectricityHistoryChart({ data, height = 320 }: Props) {
     </div>
   )
 }
+
+

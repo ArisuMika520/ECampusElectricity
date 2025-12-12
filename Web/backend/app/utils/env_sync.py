@@ -23,3 +23,5 @@ def sync_config_to_env(key: str, value) -> None:
     lines = [f"{k}={v}" for k, v in env_data.items()]
     with open(ENV_PATH, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
+
+

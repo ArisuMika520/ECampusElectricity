@@ -10,3 +10,5 @@ export PYTHONPATH="$SCRIPT_DIR/Script:$SCRIPT_DIR/Web/backend:$SCRIPT_DIR/Bot:$P
 # 使用 Web 后端的虚拟环境
 exec "$SCRIPT_DIR/Web/backend/venv/bin/python" elect_tracker_db.py
 
+
+

@@ -14,3 +14,5 @@ class UserSubscription(SQLModel, table=True):
     is_owner: bool = Field(default=False, description="是否为订阅创建者/拥有者")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
+
