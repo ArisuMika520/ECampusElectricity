@@ -5,6 +5,7 @@ from app.database import init_db
 from app.models import user, subscription, history, config, log, user_subscription
 from app.api import auth, subscriptions, history as history_api, config as config_api, logs, websocket, admin
 from app.utils.logging import setup_logging
+from app.utils.pm2_log_monitor import pm2_log_monitor
 
 app = FastAPI(
     title="ECampus Electricity Monitor API",
@@ -40,6 +41,14 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 @app.on_event("startup")
 async def startup_event():
     init_db()
+    # 启动PM2日志监控器
+    pm2_log_monitor.start()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    # 停止PM2日志监控器
+    pm2_log_monitor.stop()
 
 
 @app.get("/")
