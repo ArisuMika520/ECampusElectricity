@@ -18,12 +18,15 @@ setup_logging(settings.LOG_LEVEL, settings.LOG_FILE)
 cors_origins = settings.get_cors_origins()
 print(f"[CORS] Allowed origins: {cors_origins}")
 
+# 配置 CORS 中间件 - 必须在所有路由之前添加
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["subscriptions"])
