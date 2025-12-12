@@ -4,11 +4,9 @@ import { getToken, removeToken } from "./auth"
 // 后端 API 地址
 // 使用 Next.js API Routes 作为代理，避免暴露后端地址和 CORS 问题
 // 前端请求 /api/proxy/*，Next.js 服务端转发到 localhost:8000
+// 统一使用 /api/proxy 作为 baseURL，确保客户端和服务端都通过代理路由
 const api = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.API_BASE_URL ||
-    (typeof window !== 'undefined' ? '/api/proxy' : 'http://localhost:8000'),
+  baseURL: '/api/proxy',
   withCredentials: false,
   timeout: 10000, // 10秒超时
 })

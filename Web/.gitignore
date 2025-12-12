@@ -23,7 +23,9 @@ build/
 
 # Logs
 *.log
+backend/logs/
 logs/
+!frontend/app/logs/
 
 # IDE
 .vscode/
