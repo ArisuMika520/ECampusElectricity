@@ -70,10 +70,8 @@ async function handleRequest(
     const queryString = url.search;
     const backendUrl = `${BACKEND_URL}/api/${apiPath}${queryString}`;
     
-    // 调试日志（生产环境可以移除）
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Proxy] ${method} ${request.url} -> ${backendUrl}`);
-    }
+    // 调试日志
+    console.log(`[Proxy] ${method} ${request.url} -> ${backendUrl}`);
 
     // 获取请求头（排除一些不需要的头部）
     const headers: HeadersInit = {};
@@ -96,9 +94,14 @@ async function handleRequest(
     let body: BodyInit | undefined;
     if (method !== 'GET' && method !== 'HEAD') {
       try {
+        // 读取请求体
         body = await request.text();
+        if (body && process.env.NODE_ENV === 'development') {
+          console.log('[Proxy] Request body:', body.substring(0, 200));
+        }
       } catch (e) {
         // 如果没有请求体，忽略错误
+        console.warn('[Proxy] Failed to read request body:', e);
       }
     }
 
@@ -110,20 +113,39 @@ async function handleRequest(
     });
 
     // 获取响应数据
-    const data = await response.text();
-    let jsonData;
+    const contentType = response.headers.get('content-type') || '';
+    let responseData: any;
+    
     try {
-      jsonData = JSON.parse(data);
-    } catch {
-      jsonData = data;
+      const text = await response.text();
+      
+      if (contentType.includes('application/json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+        try {
+          responseData = text ? JSON.parse(text) : {};
+        } catch (e) {
+          console.error('[Proxy] Failed to parse JSON response:', e, 'Response text:', text.substring(0, 200));
+          responseData = { detail: text || 'Invalid JSON response from backend' };
+        }
+      } else {
+        // 非 JSON 响应
+        responseData = text || '';
+      }
+    } catch (e) {
+      console.error('[Proxy] Failed to read response:', e);
+      responseData = { detail: 'Failed to read response from backend' };
     }
 
-    // 返回响应
-    return NextResponse.json(jsonData, {
+    // 记录错误响应
+    if (response.status >= 400) {
+      console.error(`[Proxy] Error response ${response.status}:`, responseData);
+    }
+
+    // 返回响应，保持原始状态码和响应头
+    return NextResponse.json(responseData, {
       status: response.status,
       statusText: response.statusText,
       headers: {
-        'Content-Type': response.headers.get('Content-Type') || 'application/json',
+        'Content-Type': 'application/json',
       },
     });
   } catch (error: any) {
