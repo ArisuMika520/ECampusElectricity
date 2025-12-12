@@ -130,7 +130,7 @@ cd Web
 ```
 
 启动后访问：
-- **前端**: http://localhost:3000
+- **前端**: http://localhost:4000
 - **后端 API**: http://localhost:8000
 - **API 文档**: http://localhost:8000/docs
 
@@ -411,7 +411,7 @@ bash scripts/dev.sh
 - 前后端同时启动
 - 支持热重载（代码修改自动重启）
 - 日志输出到控制台和日志文件
-- 前端运行在 http://localhost:3000
+- 前端运行在 http://localhost:4000
 - 后端运行在 http://localhost:8000
 
 #### 生产模式（Production）
@@ -479,7 +479,7 @@ python src/bot/Elect_bot.py
 1. **数据库配置**: 确保 PostgreSQL 已正确安装并运行
 2. **环境变量**: 首次运行前必须配置 `backend/.env` 文件
 3. **数据库初始化**: 首次运行前必须执行 `npm run db:init` 初始化数据库
-4. **端口占用**: 确保 3000（前端）和 8000（后端）端口未被占用
+4. **端口占用**: 确保 4000（前端）和 8000（后端）端口未被占用
 
 ### Bot 版本注意事项
 

@@ -13,9 +13,14 @@ app = FastAPI(
 )
 
 setup_logging(settings.LOG_LEVEL, settings.LOG_FILE)
+
+# 获取 CORS 允许的源
+cors_origins = settings.get_cors_origins()
+print(f"[CORS] Allowed origins: {cors_origins}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.get_cors_origins(),
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
