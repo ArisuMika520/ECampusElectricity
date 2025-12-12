@@ -138,14 +138,19 @@ cd Web
 
 ### Bot 版本快速开始
 
+#### 方式一：使用虚拟环境（推荐）
+
 ```bash
 # 1. 进入 Bot 目录
 cd Bot
 
-# 2. 安装依赖
-pip install -r requirements.txt
+# 2. 一键设置环境（自动创建虚拟环境并安装依赖）
+bash setup.sh
 
-# 3. 配置 config.yaml
+# 3. 激活虚拟环境（如果未自动激活）
+source venv/bin/activate
+
+# 4. 配置 config.yaml
 cp config.yaml.example config.yaml
 # 编辑 config.yaml，填入以下配置：
 #   - electricity.shiroJID: 从易校园抓取的 shiroJID
@@ -153,6 +158,22 @@ cp config.yaml.example config.yaml
 #   - qq.secret: QQ 机器人 Secret
 #   - uploader.token: 图床 API Token（可选）
 #   - uploader.album_id: 图床相册 ID（可选）
+
+# 5. 运行机器人
+python src/bot/Elect_bot.py
+```
+
+#### 方式二：手动安装（不推荐，可能导致权限问题）
+
+```bash
+# 1. 进入 Bot 目录
+cd Bot
+
+# 2. 安装依赖（不推荐以 root 用户运行）
+pip install -r requirements.txt
+
+# 3. 配置 config.yaml
+cp config.yaml.example config.yaml
 
 # 4. 运行机器人
 python src/bot/Elect_bot.py

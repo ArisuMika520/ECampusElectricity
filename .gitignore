@@ -176,6 +176,7 @@ cython_debug/
 
 # Bot 项目相关
 Bot/__pycache__/
+Bot/venv/
 Bot/config.yaml
 Bot/data_files/plot
 Bot/data_files/sub.json
