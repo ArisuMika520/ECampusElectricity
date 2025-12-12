@@ -17,6 +17,7 @@ type LogRecord = {
   message: string;
   module?: string | null;
   timestamp: string;
+  process?: string; // PM2进程名称（web-backend, web-frontend, tracker）
 };
 
 type TerminalType = any;
@@ -395,22 +396,29 @@ export default function LogsPage() {
     
     try {
       console.log('Fetching initial logs from /logs...');
-      terminal.writeln('\x1b[36m正在获取历史日志...\x1b[0m');
+      terminal.writeln('\x1b[36m正在获取PM2日志...\x1b[0m');
       
       const resp = await api.get('/logs', { params: { limit: 200 } });
       console.log('Logs response:', resp.data);
       const logs = resp.data || [];
       
-      if (logs.length > 0) {
-      terminal.writeln(`\x1b[32m✓ 已加载 ${logs.length} 条历史日志\x1b[0m`);
-      terminal.writeln('');
+      // 只显示PM2日志
+      const pm2Logs = logs.filter((log: LogRecord) => {
+        const module = log.module || '';
+        return module.startsWith('pm2.');
+      });
       
-      const reversedLogs = [...logs].reverse();
+      if (pm2Logs.length > 0) {
+        terminal.writeln(`\x1b[32m✓ 已加载 ${pm2Logs.length} 条PM2历史日志\x1b[0m`);
+        terminal.writeln('');
+        
+        const reversedLogs = [...pm2Logs].reverse();
         reversedLogs.forEach((log: LogRecord) => {
           writeLogToTerminal(terminal, log);
         });
       } else {
-        terminal.writeln('\x1b[33m⚠ 暂无历史日志\x1b[0m');
+        terminal.writeln('\x1b[33m⚠ 暂无PM2历史日志\x1b[0m');
+        terminal.writeln('\x1b[36m等待PM2日志输出...\x1b[0m');
       }
     } catch (error: any) {
       const errorMsg = error.response?.data?.detail || error.message || '未知错误';
@@ -535,11 +543,28 @@ export default function LogsPage() {
             return;
           }
           
+          // 过滤掉无关的日志：只显示PM2日志
+          const module = data.module || '';
+          const isPm2Log = module.startsWith('pm2.');
+          
+          // 过滤掉websocket连接相关的日志
+          const isWebSocketLog = module === 'websocket' || 
+                                 (typeof data.message === 'string' && 
+                                  (data.message.includes('WebSocket connection') || 
+                                   data.message.includes('WebSocket error') ||
+                                   data.message.includes('WebSocket closed')));
+          
+          // 只显示PM2日志，过滤掉其他无关日志
+          if (!isPm2Log || isWebSocketLog) {
+            return;
+          }
+          
           const line: LogRecord = {
             level: (data.level || 'INFO').toUpperCase(),
             message: String(data.message || ''),
             module: data.module || null,
             timestamp: data.timestamp || new Date().toISOString(),
+            process: data.process || null, // PM2进程名称
           };
           
           if (terminal && terminalInstanceRef.current) {
@@ -681,15 +706,40 @@ export default function LogsPage() {
         levelSymbol = '🔍';
       }
 
-      const module = log.module ? `\x1b[34m[${log.module}]\x1b[0m` : '';
+      // 根据进程名称设置颜色
+      const process = log.process || '';
+      let processColor = '\x1b[37m'; // 默认白色
+      let processName = '';
+      
+      if (process === 'web-backend') {
+        processColor = '\x1b[34m'; // 蓝色
+        processName = '[web-backend]';
+      } else if (process === 'web-frontend') {
+        processColor = '\x1b[32m'; // 绿色
+        processName = '[web-frontend]';
+      } else if (process === 'tracker') {
+        processColor = '\x1b[33m'; // 黄色
+        processName = '[tracker]';
+      }
+      
+      const processTag = processName ? `${processColor}${processName}\x1b[0m` : '';
+      const module = log.module && !processName ? `\x1b[34m[${log.module}]\x1b[0m` : '';
       const timestampStr = `\x1b[90m${time}\x1b[0m`;
       const levelText = `${levelColor}${levelSymbol} ${level}\x1b[0m`;
       const message = String(log.message || '').trim();
 
       if (message) {
-        terminal.writeln(`${timestampStr} ${levelText} ${module} ${message}`);
+        const parts = [timestampStr, levelText];
+        if (processTag) parts.push(processTag);
+        if (module) parts.push(module);
+        parts.push(message);
+        terminal.writeln(parts.join(' '));
       } else {
-        terminal.writeln(`${timestampStr} ${levelText} ${module} (空消息)`);
+        const parts = [timestampStr, levelText];
+        if (processTag) parts.push(processTag);
+        if (module) parts.push(module);
+        parts.push('(空消息)');
+        terminal.writeln(parts.join(' '));
       }
     } catch (error) {
       console.error('Failed to write log to terminal:', error, log);

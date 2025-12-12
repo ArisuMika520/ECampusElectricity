@@ -11,14 +11,22 @@ from app.utils.timezone import now_naive
 logger = logging.getLogger(__name__)
 
 # PM2日志文件路径（相对于项目根目录）
-PM2_LOG_DIR = Path(__file__).resolve().parent.parent.parent.parent / "logs" / "pm2"
+# 从 Web/backend/app/utils/ 向上五级到项目根目录
+# Web/backend/app/utils/pm2_log_monitor.py -> Web/backend/app/utils/ -> Web/backend/app/ -> Web/backend/ -> Web/ -> 项目根目录
+PM2_LOG_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent / "logs" / "pm2"
 
-# 要监控的PM2日志文件
+# 要监控的PM2日志文件（只监控这三个服务）
 PM2_LOG_FILES = {
     "web-backend": ["web-backend.log", "web-backend-error.log", "web-backend-out.log"],
     "web-frontend": ["web-frontend.log", "web-frontend-error.log", "web-frontend-out.log"],
     "tracker": ["tracker.log", "tracker-error.log", "tracker-out.log"],
-    "bot": ["bot.log", "bot-error.log", "bot-out.log"],
+}
+
+# 进程颜色映射（用于前端显示）
+PROCESS_COLORS = {
+    "web-backend": "blue",      # 蓝色
+    "web-frontend": "green",    # 绿色
+    "tracker": "yellow",        # 黄色
 }
 
 
@@ -94,11 +102,15 @@ class PM2LogMonitor:
         if not message:
             message = line
         
+        # 提取服务名称（用于颜色标识）
+        service_name = source.split('.')[0] if '.' in source else source
+        
         return {
             "level": level,
             "message": message,
             "module": f"pm2.{source}",
-            "timestamp": timestamp_str or now_naive().isoformat()
+            "timestamp": timestamp_str or now_naive().isoformat(),
+            "process": service_name,  # 添加进程名称用于前端颜色区分
         }
     
     async def read_new_lines(self, file_path: Path, source: str):
@@ -130,7 +142,8 @@ class PM2LogMonitor:
                                 "level": log_entry["level"],
                                 "message": log_entry["message"],
                                 "module": log_entry["module"],
-                                "timestamp": log_entry["timestamp"]
+                                "timestamp": log_entry["timestamp"],
+                                "process": log_entry.get("process", "unknown"),  # 添加进程名称
                             }
                             
                             # 添加到所有WebSocket连接的消息队列
