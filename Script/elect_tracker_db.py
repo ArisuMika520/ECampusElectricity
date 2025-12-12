@@ -10,20 +10,15 @@ import asyncio
 import uuid
 from pathlib import Path
 from typing import Optional, Any, cast
+from zoneinfo import ZoneInfo
 
 # Ensure local packages are importable when running as a standalone script
 BASE_DIR = Path(__file__).resolve().parent.parent
-BOT_SRC_PATH = BASE_DIR / "Bot" / "src"
 WEB_BACKEND_PATH = BASE_DIR / "Web" / "backend"
 
-for path in (BOT_SRC_PATH, WEB_BACKEND_PATH):
-    path_str = str(path)
-    if path_str not in sys.path:
-        sys.path.insert(0, path_str)
-
-from core import Buildings
-from bot.bot_command import ElectricityMonitor
-from botpy.ext.cog_yaml import read  # type: ignore
+# 只需要添加 Web Backend 路径
+if str(WEB_BACKEND_PATH) not in sys.path:
+    sys.path.insert(0, str(WEB_BACKEND_PATH))
 
 from sqlmodel import Session, select, func
 from sqlalchemy import desc, bindparam
@@ -31,6 +26,9 @@ from app.database import engine
 from app.models.subscription import Subscription
 from app.models.history import ElectricityHistory
 from app.config import settings
+# 使用 Web Backend 的核心功能，不依赖 Bot
+from app.core.electricity import ECampusElectricity
+from app.core.buildings import get_building_index
 
 # 配置日志记录器
 pylog.basicConfig(
@@ -44,14 +42,22 @@ pylog.basicConfig(
 
 # --- 配置 ---
 
-# 读取Bot配置文件
-config = read(os.path.join(BASE_DIR, 'Bot', 'config.yaml'))
-# 每次轮询之间的等待时间（秒）
-WAIT_TIME = config.get("tracker", {}).get("check_interval", 3600)
-# 数据上限（从Web后端配置读取）
-HIS_LIMIT = settings.HISTORY_LIMIT if hasattr(settings, 'HISTORY_LIMIT') else 2400
-# 时间字符串格式
+# 从统一配置读取
+WAIT_TIME = settings.TRACKER_CHECK_INTERVAL
+HIS_LIMIT = settings.HISTORY_LIMIT
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
+
+# 初始化电费查询服务
+electricity_service = ECampusElectricity({
+    "shiroJID": settings.SHIRO_JID or "",
+    "floor_offset_file": None
+})
+
+
+def get_shanghai_time() -> datetime.datetime:
+    """获取上海时区的当前时间（带时区信息）"""
+    return datetime.datetime.now(SHANGHAI_TZ)
 
 
 def elect_require(target_name: str) -> float:
@@ -74,13 +80,24 @@ def elect_require(target_name: str) -> float:
     room_part = parts[1]
     area = 1 if build_part.startswith('D') else 0
 
-    buildIndex = Buildings.get_buildingIndex(area, build_part)
+    building_idx = get_building_index(area, build_part)
     floor = int(room_part[0]) - 1
-    roomNum = int(room_part[1:]) - 1
+    room_num = int(room_part[1:]) - 1
 
-    surplus, room_name = ElectricityMonitor.query_electricity(area, buildIndex, floor, roomNum)
+    # 使用 ECampusElectricity 进行查询
+    result = electricity_service.query_room_surplus_by_human(
+        area_index=area,
+        building_name=build_part,
+        floor_number=int(room_part[0]),
+        room_number=int(room_part)
+    )
+    
+    if result.get("error") == 0:
+        return result["data"]["surplus"]
+    else:
+        error_msg = result.get("error_description", "未知错误")
+        raise Exception(f"查询电费失败: {error_msg}")
 
-    return surplus
 
 
 def get_latest_history(session: Session, subscription_id: uuid.UUID) -> Optional[ElectricityHistory]:
@@ -105,7 +122,15 @@ def should_add_history(session: Session, subscription_id: uuid.UUID, new_value: 
     
     # 如果值相同且时间差小于2小时，则不追加
     if latest.surplus == new_value:
-        time_difference = datetime.datetime.utcnow() - latest.timestamp
+        # 确保时间比较时使用同一时区
+        current_time = get_shanghai_time()
+        # 如果数据库中的时间没有时区信息，将其视为上海时间
+        if latest.timestamp.tzinfo is None:
+            latest_time = latest.timestamp.replace(tzinfo=SHANGHAI_TZ)
+        else:
+            latest_time = latest.timestamp.astimezone(SHANGHAI_TZ)
+        
+        time_difference = current_time - latest_time
         if time_difference < datetime.timedelta(hours=2):
             pylog.info(f"订阅 {subscription_id} 数据未变 (值: {new_value}) 且时间差小于2小时，跳过保存。")
             return False
@@ -163,7 +188,7 @@ async def main():
 
     while True:
         # 输出信息
-        current_time_str = datetime.datetime.now().strftime(TIME_FORMAT)
+        current_time_str = get_shanghai_time().strftime(TIME_FORMAT)
         pylog.info(f"现在时间是 {current_time_str}，准备开始查询——")
 
         # 从数据库读取活跃订阅
@@ -189,8 +214,9 @@ async def main():
                         # 执行查询
                         new_value = elect_require(subscription.room_name)
                         
-                        # 获取当前时间作为记录时间
-                        record_time = datetime.datetime.utcnow()
+                        # 获取当前上海时间，并移除时区信息（只保留时间值）
+                        # 这样存储到数据库时就是上海时间的本地时间值
+                        record_time = get_shanghai_time().replace(tzinfo=None)
                         
                         # 判断是否需要添加历史记录
                         if should_add_history(session, sub_id, new_value):
@@ -223,7 +249,7 @@ async def main():
 
         # 等待
         pylog.info(f"本轮查询结束，程序将休眠 {WAIT_TIME} 秒。")
-        now = datetime.datetime.now()
+        now = get_shanghai_time()
         next_run_time = now + datetime.timedelta(seconds=WAIT_TIME)
         next_run_time_str = next_run_time.strftime(TIME_FORMAT)
         pylog.info(f"下一次查询预计将于 {next_run_time_str} 进行。\n" + 30 * "-")

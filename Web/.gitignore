@@ -20,6 +20,7 @@ build/
 # Database
 *.db
 *.sqlite
+backend/data
 
 # Logs
 *.log

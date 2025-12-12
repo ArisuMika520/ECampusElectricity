@@ -2,6 +2,9 @@
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
+# 上海时区
+SHANGHAI_TZ = ZoneInfo("Asia/Shanghai")
+
 
 def now_utc() -> datetime:
     """返回当前 UTC 时间（带 tzinfo）"""
@@ -9,8 +12,8 @@ def now_utc() -> datetime:
 
 
 def now_naive() -> datetime:
-    """返回当前 UTC 时间的 naive 版本，用于数据库默认值"""
-    return datetime.utcnow().replace(tzinfo=None)
+    """返回当前上海时间的 naive 版本，用于数据库默认值"""
+    return datetime.now(SHANGHAI_TZ).replace(tzinfo=None)
 
 
 def to_shanghai_naive(dt: datetime | None) -> datetime | None:
@@ -22,5 +25,4 @@ def to_shanghai_naive(dt: datetime | None) -> datetime | None:
         return None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    sh_tz = ZoneInfo("Asia/Shanghai")
-    return dt.astimezone(sh_tz).replace(tzinfo=None)
+    return dt.astimezone(SHANGHAI_TZ).replace(tzinfo=None)
