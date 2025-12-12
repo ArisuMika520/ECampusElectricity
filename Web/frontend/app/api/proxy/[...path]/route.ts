@@ -75,29 +75,43 @@ async function handleRequest(
 
     // 获取请求头（排除一些不需要的头部）
     const headers: HeadersInit = {};
+    let hasContentType = false;
+    
     request.headers.forEach((value, key) => {
       // 排除 host, connection 等头部
       const lowerKey = key.toLowerCase();
       if (
-        !['host', 'connection', 'content-length', 'referer'].includes(lowerKey)
+        !['host', 'connection', 'content-length', 'referer', 'origin'].includes(lowerKey)
       ) {
         headers[key] = value;
+        if (lowerKey === 'content-type') {
+          hasContentType = true;
+        }
       }
     });
     
     // 确保 Content-Type 正确设置
-    if (!headers['Content-Type'] && method !== 'GET' && method !== 'HEAD') {
+    if (!hasContentType && method !== 'GET' && method !== 'HEAD') {
       headers['Content-Type'] = 'application/json';
+    }
+    
+    // 确保 Content-Type 是 application/json（如果存在但不是 json，则覆盖）
+    if (method !== 'GET' && method !== 'HEAD') {
+      const contentType = headers['Content-Type'] || headers['content-type'];
+      if (!contentType || !contentType.toString().includes('application/json')) {
+        headers['Content-Type'] = 'application/json';
+      }
     }
 
     // 获取请求体
     let body: BodyInit | undefined;
     if (method !== 'GET' && method !== 'HEAD') {
       try {
-        // 读取请求体
+        // 读取请求体 - 保持原始格式
         body = await request.text();
-        if (body && process.env.NODE_ENV === 'development') {
+        if (body) {
           console.log('[Proxy] Request body:', body.substring(0, 200));
+          console.log('[Proxy] Content-Type header:', headers['Content-Type'] || headers['content-type']);
         }
       } catch (e) {
         // 如果没有请求体，忽略错误
